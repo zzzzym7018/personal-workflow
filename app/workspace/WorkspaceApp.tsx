@@ -847,7 +847,7 @@ function TodayView({
             ))}
           </div>
         </section>
-        <section className="panel question-panel">
+        <section className="panel compact-panel question-panel">
           <div className="panel-heading">
             <h2>待探索的问题</h2>
             <button
@@ -858,14 +858,27 @@ function TodayView({
               查看全部
             </button>
           </div>
-          <span className="question-mark" aria-hidden="true">
-            ?
-          </span>
-          <p>
-            {snapshot.ideas.find(
-              (idea) => idea.type === "question" && idea.status !== "resolved",
-            )?.title ?? "记录一个仍未解决的问题"}
-          </p>
+          <button
+            className="question-entry"
+            type="button"
+            onClick={() => onNavigate("ideas")}
+          >
+            <span className="question-entry-mark" aria-hidden="true">
+              问
+            </span>
+            <span className="question-entry-copy">
+              <small>正在探索</small>
+              <strong>
+                {snapshot.ideas.find(
+                  (idea) =>
+                    idea.type === "question" && idea.status !== "resolved",
+                )?.title ?? "记录一个仍未解决的问题"}
+              </strong>
+            </span>
+            <span className="question-entry-arrow" aria-hidden="true">
+              →
+            </span>
+          </button>
         </section>
       </aside>
     </div>

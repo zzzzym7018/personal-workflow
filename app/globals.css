@@ -129,9 +129,16 @@ kbd { padding: 2px 7px; border: 1px solid var(--line); border-bottom-width: 2px;
 .stage-meter { display: flex; gap: 4px; }
 .stage-meter span { width: 100%; max-width: 26px; height: 4px; border-radius: 4px; background: #dfe6ea; }
 .stage-meter .is-filled { background: var(--teal); }
-.question-panel { position: relative; overflow: hidden; background: #fffaf1; }
-.question-panel p { position: relative; margin: 15px 12px 3px 0; font-family: var(--font-display); font-size: 17px; line-height: 1.45; }
-.question-mark { position: absolute; right: 10px; bottom: -31px; color: rgba(212, 139, 44, 0.13); font-family: var(--font-display); font-size: 116px; line-height: 1; }
+.question-panel { background: var(--surface); }
+.question-entry { display: grid; width: 100%; grid-template-columns: 34px minmax(0, 1fr) 22px; align-items: center; gap: 10px; margin-top: 12px; padding: 11px 10px; border: 1px solid var(--line); border-radius: 10px; background: #fbfcfc; text-align: left; transition: border-color 160ms ease, background 160ms ease, transform 160ms ease; }
+.question-entry:hover { border-color: #c7a66f; background: #fffaf1; }
+.question-entry:active { transform: translateY(1px); }
+.question-entry-mark { display: grid; width: 32px; height: 32px; place-items: center; border-radius: 9px; color: #8b5a15; background: #fff0d9; font-size: 12px; font-weight: 700; }
+.question-entry-copy { display: grid; min-width: 0; gap: 2px; }
+.question-entry-copy small { color: var(--saffron); font-family: var(--font-mono); font-size: 9px; font-weight: 700; letter-spacing: 0.08em; }
+.question-entry-copy strong { display: -webkit-box; overflow: hidden; color: var(--ink); font-family: var(--font-sans); font-size: 13px; font-weight: 600; line-height: 1.55; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.question-entry-arrow { color: var(--ink-muted); font-family: var(--font-mono); font-size: 14px; transition: color 160ms ease, transform 160ms ease; }
+.question-entry:hover .question-entry-arrow { color: var(--saffron); transform: translateX(2px); }
 
 .timeline-panel { padding: 20px 22px 24px; }
 .timeline { position: relative; min-height: 650px; margin-top: 17px; margin-left: 2px; overflow: hidden; border-top: 1px solid var(--line); }
