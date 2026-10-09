@@ -2412,6 +2412,12 @@ function useDialogFocus(
   initialRef: React.RefObject<HTMLElement | null>,
   onClose: () => void,
 ) {
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     const prior = document.activeElement as HTMLElement | null;
     const backgrounds = Array.from(
@@ -2424,7 +2430,7 @@ function useDialogFocus(
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (event.key !== "Tab" || !dialogRef.current) return;
@@ -2450,7 +2456,7 @@ function useDialogFocus(
       backgrounds.forEach((background) => background.removeAttribute("inert"));
       prior?.focus();
     };
-  }, [dialogRef, initialRef, onClose]);
+  }, [dialogRef, initialRef]);
 }
 
 function TypedField({

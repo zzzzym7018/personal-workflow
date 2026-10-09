@@ -29,3 +29,14 @@ test("keeps privacy and Google tokens on the server", async () => {
   assert.match(calendar, /GOOGLE_TOKEN_ENCRYPTION_KEY/);
   assert.doesNotMatch(client, /GOOGLE_CLIENT_SECRET|GOOGLE_TOKEN_ENCRYPTION_KEY|access_token/);
 });
+
+test("keeps dialog focus stable while users type with an IME", async () => {
+  const client = await readFile(
+    new URL("../app/workspace/WorkspaceApp.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(client, /const onCloseRef = useRef\(onClose\)/);
+  assert.match(client, /onCloseRef\.current\(\)/);
+  assert.match(client, /\[dialogRef, initialRef\]/);
+  assert.doesNotMatch(client, /\[dialogRef, initialRef, onClose\]/);
+});
