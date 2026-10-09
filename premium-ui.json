@@ -1,0 +1,17 @@
+{
+  "profile": "product-admin",
+  "sourceRoots": ["app"],
+  "locale": "zh-CN",
+  "canonicalMap": "UX-CONTRACT.md",
+  "requiredCapabilities": ["Select/Listbox", "Date", "Form", "Scrollbar", "Toast", "CRUD"],
+  "ownership": {
+    "Select/Listbox": "native",
+    "Date": "typed"
+  },
+  "requiredCommands": [],
+  "commands": {},
+  "evidence": {
+    "crudFullFlow": "tests/rendered-html.test.mjs",
+    "failurePaths": "tests/rendered-html.test.mjs"
+  }
+}

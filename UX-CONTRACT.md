@@ -1,0 +1,115 @@
+# 知行台 UX Contract
+
+## Product context
+
+- Audience: 单用户知识工作者。
+- Primary jobs: 规划时间、推进项目、记录领域理解和疑问、完成周回顾。
+- Target market(s): 个人自用；无市场特定业务规则。
+- Active locales: `zh-CN`，专业术语允许中英混排。
+- Language/content register and native-review policy: 简洁、直接、使用一致动词。
+- Timezone/calendar policy: `Asia/Shanghai`，公历；Google 事件以绝对时间存储，全天日期单独处理。
+- Accessibility target: WCAG 2.2 AA。
+
+## Business-context sources
+
+| Domain / scope | Authoritative source | Source type | Reviewed date |
+|---|---|---|---|
+| Permission model | `PRODUCT.md` | Product brief | 2026-10-09 |
+| Data lifecycle | `PRODUCT.md` | Product brief | 2026-10-09 |
+| Deletion / retention | `PRODUCT.md` | Product brief | 2026-10-09 |
+| Calendar synchronization | Google Calendar API contract + `PRODUCT.md` | External API / Product brief | 2026-10-09 |
+| Market / content conventions | `PRODUCT.md` | Product brief | 2026-10-09 |
+
+## Visual contract
+
+- Project `DESIGN.md`: `DESIGN.md`
+- Token ownership model: existing runtime canonical（Model B）
+- Runtime design-system/token source: `app/globals.css`
+- Mapping/export/adapters: CSS custom properties → shared class recipes → workspace components
+- Token drift gate: DESIGN.md lint + premium audit + raw token search
+- Supported themes: light；dark deferred
+- Design-context owner/review policy: durable visual changes update DESIGN.md and CSS together
+
+## Canonical UI Map
+
+| Capability | Canonical owner | Source of truth | Allowed variants | Verification |
+|---|---|---|---|---|
+| Select/Listbox | shared native field recipe | UX contract | native（platform popup accepted） | keyboard + browser |
+| Date | shared typed date/time field recipe | UX contract | typed | format + keyboard + browser |
+| Form | shared form/field/error classes and handlers | UX contract | create / edit | validation workflow |
+| Scrollbar | `app/globals.css` global baseline | DESIGN.md | stable-gutter exception | computed/browser |
+| Toast | `WorkspaceApp` shared toast viewport | UX contract | success / warning / info / error | live region |
+| CRUD | `/api/workspace` + shared editor | UX contract | stay-inline | full-flow browser |
+
+## Component behavior
+
+| Component | Default | Hover | Focus | Active | Disabled | Busy | Error |
+|---|---|---|---|---|---|---|---|
+| Button | semantic tone | lift/tone | 3px ring | inset | muted/no pointer | fixed spinner slot | inline status |
+| Icon button | named button | tone | 3px ring | inset | hidden or explained | disabled | tooltip/status |
+| Input | bordered surface | stronger border | ring | n/a | muted | reserved adornment | text + aria-invalid |
+| Search | clear + local filter | stronger border | ring | n/a | n/a | reserved slot | status region |
+| Textarea | resize none | stronger border | ring | n/a | muted | n/a | text + aria-invalid |
+| Table/list | stable rows | surface tint | row action ring | selected tint | muted | stable spinner | persistent retry |
+
+## Dataset navigation
+
+- Lists are personal and bounded in v1; render all with local filtering.
+- Committed section/filter state is encoded in `?view=` where practical; sensitive drafts are not placed in URLs.
+- Empty, no-results, error and loading use stable page regions with create/reset/retry actions.
+- Browser Back restores the selected top-level view; mobile scroll remains page-owned.
+
+## Flow ledger
+
+| Operation | Trigger | Pending | Success destination | Success feedback | Failure recovery | Focus outcome | Source ref |
+|---|---|---|---|---|---|---|---|
+| Create | 创建 | stable busy action | stay in owning view | “已创建” toast | keep values + inline error | new item / heading | PRODUCT.md |
+| Edit | 保存更改 | stable busy action | stay in context | “更改已保存” | keep editor + retry | edited item | PRODUCT.md |
+| Archive | 归档 | confirmation busy | stay in list | “已归档” + Undo when honest | dialog remains + retry | next item | PRODUCT.md |
+| Search | 全局搜索 | local, no network wait | same view | result count status | clear/reset | input/results | PRODUCT.md |
+| Google sync | 立即同步 | persistent sync status | same view | exact import/export count | status panel + retry | sync trigger | PRODUCT.md |
+| Cancel/back | 取消/返回 | none | originating context | none | unsaved dialog if needed | trigger | PRODUCT.md |
+
+## Navigation and responsive behavior
+
+- Route document title policy: `{页面} — 知行台`；client view changes update the title。
+- Route error / 403 page behavior: keep product identity and offer sign-in/home path; do not disguise 403 as 404。
+- Sidebar/drawer/bottom-sheet transformation: persistent left sidebar ≥760px；mobile bottom navigation and full-width editor below。
+- Responsive table strategy: independent records stack as cards；kanban remains horizontal with overflow cue。
+- Focus restoration: modal/drawer returns focus to trigger; sticky controls use scroll-margin and safe-area padding。
+
+## Overlays and feedback
+
+- Dialog primitive: application-owned modal with inert background, focus containment, Escape and restoration。
+- Destructive confirmation levels: archive uses warning; no hard delete in v1。
+- Toast placement/duration/deduplication: top-right, 4.5s, identical messages deduplicated within 2s, maximum 3。
+- Unsaved changes: create form asks before discard; routine existing-record fields use explicit save。
+- Layer contract: dropdown 200, popover 300, header 400, backdrop 500, dialog 600, drawer 700, command 800, toast 900。
+
+## Async and resilience
+
+- Mutations are pessimistic; low-risk completion toggles may be optimistic only with rollback。
+- Duplicate submit is disabled; external calendar effects are never automatically retried after uncertain completion。
+- Offline read keeps current data; writes retain input and provide retry, not an implicit queue。
+- 401 returns through approved sign-in; 403 explains the allowlist boundary。
+- Stale requests use AbortController or request identity before committing state。
+
+## Validation
+
+- Manual typed schema for v1 with server revalidation。
+- Validate on submit, then on change for fields already in error。
+- Long forms show summary plus inline association; first invalid field receives focus。
+- All product forms use `noValidate`; textareas use `resize: none`。
+
+## Permission and clipboard
+
+- All non-public content is server-protected; wrong authenticated account receives 403。
+- Google tokens never appear in UI, toast, URL, logs or client storage。
+- Disabled sync explains missing Google connection and links to Settings。
+
+## Verification
+
+- Required static commands: premium strict audit, anti-pattern search, lint, build, tests。
+- Browser matrix: desktop, narrow mobile, keyboard, reduced motion, success/empty/error where injectable。
+- Canonical sibling comparison: create/edit flows across 日程、项目、领域学习、Ideas。
+- CRUD and failure-path evidence: browser exercise plus `tests/rendered-html.test.mjs`。
