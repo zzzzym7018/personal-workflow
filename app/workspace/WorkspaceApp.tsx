@@ -153,15 +153,8 @@ const stageLabels = [
 ];
 
 export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
-  const [activeView, setActiveView] = useState<ViewKey>(() => {
-    if (typeof window === "undefined") return "today";
-    const view = new URLSearchParams(window.location.search).get(
-      "view",
-    ) as ViewKey | null;
-    return view && navigation.some((item) => item.key === view)
-      ? view
-      : "today";
-  });
+  const [activeView, setActiveView] = useState<ViewKey>("today");
+  const [navigationReady, setNavigationReady] = useState(false);
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -180,6 +173,17 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
   const [googleStatus, setGoogleStatus] = useState<GoogleStatus | null>(null);
   const [syncing, setSyncing] = useState(false);
   const quickAddRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      const view = new URLSearchParams(window.location.search).get(
+        "view",
+      ) as ViewKey | null;
+      if (view && navigation.some((item) => item.key === view))
+        setActiveView(view);
+      setNavigationReady(true);
+    });
+  }, []);
 
   const notify = useCallback(
     (message: string, tone: Toast["tone"] = "success") => {
@@ -228,11 +232,12 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
   }, [loadGoogleStatus, loadWorkspace]);
 
   useEffect(() => {
+    if (!navigationReady) return;
     document.title = `${viewTitles[activeView]} — 知行台`;
     const url = new URL(window.location.href);
     url.searchParams.set("view", activeView);
     window.history.replaceState({ view: activeView }, "", url);
-  }, [activeView]);
+  }, [activeView, navigationReady]);
 
   useEffect(() => {
     const onPopState = () => {
@@ -1126,56 +1131,187 @@ function CalendarView({
         </div>
       </section>
       {mode === "week" ? (
-        <section className="panel week-board" aria-label="本周日程">
-          <div className="week-header">
-            <span>时间</span>
-            {days.map((day) => (
-              <div key={day.key} className={day.isToday ? "is-today" : ""}>
-                <strong>{day.weekday}</strong>
-                <span>{day.day}</span>
-              </div>
-            ))}
-          </div>
-          <div className="week-grid">
-            {Array.from({ length: 11 }, (_, index) => index + 8).map((hour) => (
-              <div className="week-row" key={hour}>
-                <time>{String(hour).padStart(2, "0")}:00</time>
-                {days.map((day) => (
-                  <div className="week-cell" key={day.key}>
-                    <button
-                      className="week-slot-button"
-                      type="button"
-                      aria-label={`${day.weekday} ${day.day} 日 ${String(hour).padStart(2, "0")}:00 新建日程`}
-                      onClick={() => onCreate(eventDraft(day.key, hour * 60))}
-                    />
-                    {events
-                      .filter(
-                        (event) =>
-                          localDateKey(new Date(event.startAt)) === day.key &&
-                          new Date(event.startAt).getHours() === hour,
-                      )
-                      .map((event) => (
-                        <button
-                          type="button"
-                          key={event.id}
-                          className="week-event"
-                          style={{ borderLeftColor: event.color }}
-                          onClick={() => onArchive(event)}
-                        >
-                          <strong>{event.title}</strong>
-                          <span>{formatTime(event.startAt)}</span>
-                        </button>
-                      ))}
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        </section>
+        <WeekCalendar
+          days={days}
+          events={events}
+          onCreate={onCreate}
+          onArchive={onArchive}
+        />
       ) : (
         <AgendaList events={events} onArchive={onArchive} />
       )}
     </div>
+  );
+}
+
+function WeekCalendar({
+  days,
+  events,
+  onCreate,
+  onArchive,
+}: {
+  days: ReturnType<typeof weekDays>;
+  events: CalendarEvent[];
+  onCreate: (defaults?: EditorDraft) => void;
+  onArchive: (event: CalendarEvent) => void;
+}) {
+  const hours = Array.from({ length: 17 }, (_, index) => index + 8);
+  const now = useCurrentTime();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const currentPosition = nowPosition(now);
+
+  useEffect(() => {
+    const scrollArea = scrollRef.current;
+    if (!scrollArea) return;
+    const minute = Math.max(
+      8 * 60,
+      Math.min(24 * 60, shanghaiClockMinutes(new Date())),
+    );
+    const ratio = (minute - 8 * 60) / (16 * 60);
+    scrollArea.scrollTop = Math.max(
+      0,
+      ratio * 1024 - scrollArea.clientHeight * 0.32,
+    );
+  }, []);
+
+  function createFromDay(
+    event: ReactMouseEvent<HTMLButtonElement>,
+    dateKey: string,
+  ) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const currentMinute = shanghaiClockMinutes(new Date(now));
+    const requestedMinute =
+      event.detail === 0
+        ? dateKey === localDateKey(new Date(now))
+          ? Math.ceil(currentMinute / 15) * 15
+          : 9 * 60
+        : 8 * 60 +
+          Math.round(
+            ((event.clientY - rect.top) / rect.height) * 64,
+          ) *
+            15;
+    onCreate(eventDraft(dateKey, requestedMinute));
+  }
+
+  return (
+    <section className="panel week-calendar" aria-label="本周日程">
+      <div className="week-calendar-meta">
+        <div>
+          <strong>本周时间安排</strong>
+          <span>08:00—24:00 · Asia / Shanghai</span>
+        </div>
+        <small>点击空白处，以 15 分钟为单位新建日程</small>
+      </div>
+      <div
+        ref={scrollRef}
+        className="week-calendar-scroll"
+        tabIndex={0}
+        aria-label="本周日程时间网格，早上八点至晚上十二点"
+      >
+        <div className="week-calendar-canvas">
+          <div className="week-calendar-header" aria-hidden="true">
+            <div className="week-calendar-corner">
+              <span>时间</span>
+              <small>GMT+8</small>
+            </div>
+            {days.map((day) => (
+              <div
+                key={day.key}
+                className={`week-day-heading ${day.isToday ? "is-today" : ""}`}
+              >
+                <span>{day.weekday}</span>
+                <strong>{day.day}</strong>
+                {day.isToday ? <small>今天</small> : null}
+              </div>
+            ))}
+          </div>
+          <div className="week-calendar-body">
+            <div className="week-time-gutter" aria-hidden="true">
+              {hours.map((hour) => (
+                <time
+                  key={hour}
+                  style={
+                    {
+                      "--week-hour-index": hour - 8,
+                    } as CSSProperties
+                  }
+                >
+                  {String(hour).padStart(2, "0")}:00
+                </time>
+              ))}
+            </div>
+            <div className="week-day-columns">
+              {days.map((day) => {
+                const dayEvents = layoutCalendarDayEvents(
+                  events.filter(
+                    (event) =>
+                      !event.allDay &&
+                      localDateKey(new Date(event.startAt)) === day.key,
+                  ),
+                );
+                return (
+                  <div
+                    className={`week-day-column ${day.isToday ? "is-today" : ""}`}
+                    key={day.key}
+                  >
+                    <button
+                      className="week-day-create-layer"
+                      type="button"
+                      aria-label={`${day.weekday} ${day.day} 日，选择时间新建日程`}
+                      onClick={(event) => createFromDay(event, day.key)}
+                    />
+                    {day.isToday && currentPosition ? (
+                      <div
+                        className="week-now-marker"
+                        style={
+                          {
+                            "--now-position": currentPosition,
+                          } as CSSProperties
+                        }
+                        aria-hidden="true"
+                      />
+                    ) : null}
+                    {dayEvents.map(({ event, lane, laneCount }) => {
+                      const geometry = eventGeometry(event);
+                      return (
+                        <button
+                          type="button"
+                          key={event.id}
+                          className="week-calendar-event"
+                          style={
+                            {
+                              "--event-top": geometry.top,
+                              "--event-height": geometry.height,
+                              "--event-color": event.color,
+                              "--event-lane": lane,
+                              "--event-lanes": laneCount,
+                            } as CSSProperties
+                          }
+                          aria-label={`${event.title}，${formatTime(event.startAt)} 至 ${formatTime(event.endAt)}，点击归档`}
+                          onClick={() => onArchive(event)}
+                        >
+                          <time>
+                            {formatTime(event.startAt)}—{formatTime(event.endAt)}
+                          </time>
+                          <strong>{event.title}</strong>
+                          <span>
+                            {event.source === "google"
+                              ? "Google Calendar"
+                              : event.projectId
+                                ? "项目时间"
+                                : "站内日程"}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -2761,6 +2897,29 @@ function eventGeometry(event: CalendarEvent) {
     top: `${top}%`,
     height: `${Math.max(3.125, Math.min(100 - top, (duration / (16 * 60)) * 100))}%`,
   };
+}
+
+function layoutCalendarDayEvents(events: CalendarEvent[]) {
+  const laneEnds: number[] = [];
+  const positioned = [...events]
+    .sort(
+      (left, right) =>
+        new Date(left.startAt).getTime() - new Date(right.startAt).getTime(),
+    )
+    .map((event) => {
+      const start = new Date(event.startAt).getTime();
+      const end = Math.max(start + 30 * 60_000, new Date(event.endAt).getTime());
+      let lane = laneEnds.findIndex((laneEnd) => laneEnd <= start);
+      if (lane === -1) {
+        lane = laneEnds.length;
+        laneEnds.push(end);
+      } else {
+        laneEnds[lane] = end;
+      }
+      return { event, lane };
+    });
+  const laneCount = Math.max(1, laneEnds.length);
+  return positioned.map((item) => ({ ...item, laneCount }));
 }
 
 function useCurrentTime() {

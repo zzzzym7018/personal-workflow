@@ -72,9 +72,12 @@ test("calendar grids open the shared event editor with time defaults", async () 
   ]);
   assert.match(client, /function openEditor\(entity: EntityName, defaults: EditorDraft = \{\}\)/);
   assert.match(client, /className="timeline-create-layer"/);
-  assert.match(client, /className="week-slot-button"/);
-  assert.match(client, /onCreate\(eventDraft\(day\.key, hour \* 60\)\)/);
+  assert.match(client, /className="week-day-create-layer"/);
+  assert.match(client, /function layoutCalendarDayEvents/);
+  assert.match(client, /"--event-top": geometry\.top/);
+  assert.match(client, /Math\.round\([\s\S]*\* 64/);
   assert.match(client, /点击空白时间快速添加/);
   assert.match(styles, /\.timeline-create-layer:focus-visible/);
-  assert.match(styles, /\.week-slot-button:focus-visible/);
+  assert.match(styles, /\.week-day-create-layer:focus-visible/);
+  assert.match(styles, /\.week-calendar-body \{[^}]*height: 1024px/);
 });

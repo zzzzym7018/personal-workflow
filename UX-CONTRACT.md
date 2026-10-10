@@ -76,6 +76,7 @@
 - Route error / 403 page behavior: keep product identity and offer sign-in/home path; do not disguise 403 as 404。
 - Sidebar/drawer/bottom-sheet transformation: persistent left sidebar ≥760px；mobile bottom navigation and full-width editor below。
 - Responsive table strategy: independent records stack as cards；kanban remains horizontal with overflow cue。
+- Calendar grid strategy: 周视图固定日期头与时间栏，08:00—24:00 由同一连续比例轴定位；窄屏由时间网格拥有横向和纵向滚动，不裁切日期或事件。
 - Focus restoration: modal/drawer returns focus to trigger; sticky controls use scroll-margin and safe-area padding。
 
 ## Overlays and feedback
