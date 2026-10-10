@@ -54,11 +54,23 @@ test("today follows the current schedule and exposes complete scrollable queues"
   assert.match(client, /onClick=\{\(\) => onEditEvent\(event\)\}/);
   assert.match(client, /method: editing \? "PATCH" : "POST"/);
   assert.match(client, /editing\s*\? "保存更改"/);
+  assert.match(client, /data\.notes = draft\.note \?\? ""/);
   assert.doesNotMatch(client, /title\.includes\("实验方案"\)/);
   assert.match(styles, /\.timeline-scroll \{[^}]*overflow-y: auto/);
   assert.match(styles, /\.timeline-event \{[^}]*cursor: pointer/);
   assert.match(styles, /\.timeline-event:focus-visible/);
   assert.match(styles, /\.project-list \{[^}]*overflow-y: auto/);
+});
+
+test("event notes survive save and reopen field mapping", async () => {
+  const [client, api] = await Promise.all([
+    readFile(new URL("../app/workspace/WorkspaceApp.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/workspace/route.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(client, /note: event\.notes/);
+  assert.match(client, /data\.notes = draft\.note \?\? ""/);
+  assert.match(api, /data\.notes !== undefined \|\| data\.note !== undefined/);
+  assert.match(api, /notes: optionalText\(data\.notes \?\? data\.note\)/);
 });
 
 test("new tasks persist the date shown in the editor", async () => {

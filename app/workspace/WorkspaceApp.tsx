@@ -338,6 +338,7 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
       }
       data.startAt = startAt;
       data.endAt = endAt;
+      data.notes = draft.note ?? "";
     }
     if (editor === "learningLog") {
       data.occurredAt = parseShanghaiDateTime(draft.occurredDate, "12:00");

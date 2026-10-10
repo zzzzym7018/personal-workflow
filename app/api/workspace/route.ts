@@ -127,7 +127,8 @@ async function updateEntity(entity: EntityName, id: string, data: JsonRecord) {
       const startAt = data.startAt !== undefined ? requiredIso(data.startAt, "开始时间无效。") : undefined;
       const endAt = data.endAt !== undefined ? requiredIso(data.endAt, "结束时间无效。") : undefined;
       if (startAt && endAt && new Date(endAt) <= new Date(startAt)) throw new InputError("结束时间必须晚于开始时间。 ");
-      const patch = { ...(data.title !== undefined ? { title: requiredText(data.title, "请填写日程标题。") } : {}), ...(startAt ? { startAt } : {}), ...(endAt ? { endAt } : {}), ...(data.notes !== undefined ? { notes: optionalText(data.notes) } : {}), syncStatus: "pending", updatedAt };
+      const notesProvided = data.notes !== undefined || data.note !== undefined;
+      const patch = { ...(data.title !== undefined ? { title: requiredText(data.title, "请填写日程标题。") } : {}), ...(startAt ? { startAt } : {}), ...(endAt ? { endAt } : {}), ...(notesProvided ? { notes: optionalText(data.notes ?? data.note) } : {}), syncStatus: "pending", updatedAt };
       await db.update(events).set(patch).where(eq(events.id, id)); return { id, ...patch };
     }
     case "learningLog": {
