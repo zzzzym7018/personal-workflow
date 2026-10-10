@@ -1055,11 +1055,13 @@ function TodayView({
                     {task.projectId ? "子目标" : "任务"}
                   </span>
                   <button
-                    className="row-action row-action--danger"
+                    className="row-action row-action--delete"
                     type="button"
+                    aria-label={`删除${task.projectId ? "子目标" : "任务"} ${task.title}`}
+                    title="删除"
                     onClick={() => onDeleteTask(task)}
                   >
-                    删除
+                    ×
                   </button>
                 </div>
               ))
@@ -1625,11 +1627,13 @@ function AgendaList({
                   归档
                 </button>
                 <button
-                  className="row-action row-action--danger"
+                  className="row-action row-action--delete"
                   type="button"
+                  aria-label={`删除日程 ${event.title}`}
+                  title="删除"
                   onClick={() => onDelete(event)}
                 >
-                  删除
+                  ×
                 </button>
               </div>
             </article>
@@ -1721,11 +1725,13 @@ function ProjectsView({
                   归档
                 </button>
                 <button
-                  className="row-action row-action--danger"
+                  className="row-action row-action--delete"
                   type="button"
+                  aria-label={`删除项目 ${project.title}`}
+                  title="删除"
                   onClick={() => onDelete(project)}
                 >
-                  删除
+                  ×
                 </button>
               </div>
             </div>
@@ -1772,11 +1778,13 @@ function ProjectsView({
                     </span>
                     {task.dueDate ? <time>{formatShortDate(task.dueDate)}</time> : null}
                     <button
-                      className="row-action row-action--danger"
+                      className="row-action row-action--delete"
                       type="button"
+                      aria-label={`删除子目标 ${task.title}`}
+                      title="删除"
                       onClick={() => onDeleteTask(task)}
                     >
-                      删除
+                      ×
                     </button>
                   </div>
                 ))
@@ -2722,12 +2730,12 @@ function EditorDialog({
           <footer>
             {onDelete ? (
               <button
-                className="button button--ghost-danger editor-delete-action"
+                className="button button--outline editor-delete-action"
                 type="button"
                 onClick={onDelete}
                 disabled={saving}
               >
-                永久删除
+                删除
               </button>
             ) : null}
             <button

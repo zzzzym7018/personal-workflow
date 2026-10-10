@@ -143,7 +143,9 @@ test("schedules, goals, and projects expose confirmed permanent deletion", async
   ]);
   assert.match(client, /action: "delete"/);
   assert.match(client, /永久删除「\$\{deleteTarget\.title\}」/);
-  assert.match(client, /className="row-action row-action--danger"/);
+  assert.match(client, /className="row-action row-action--delete"/);
+  assert.match(client, /aria-label={`删除项目 \$\{project\.title\}`}/);
+  assert.match(client, />\s*×\s*<\/button>/);
   assert.match(client, /该项目及其 \$\{childCount\} 个子目标将被永久删除/);
   assert.match(client, /同时从 Google Calendar 和知行台永久删除/);
   assert.match(client, /error=\{deleteError\}/);
@@ -154,5 +156,5 @@ test("schedules, goals, and projects expose confirmed permanent deletion", async
   assert.match(api, /deleteGoogleCalendarEvent/);
   assert.match(google, /method: "DELETE"/);
   assert.match(styles, /\.button--danger/);
-  assert.match(styles, /\.row-action--danger/);
+  assert.match(styles, /\.row-action--delete/);
 });
