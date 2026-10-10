@@ -719,37 +719,75 @@ function TodayView({
   onToggleTask: (task: Task) => void;
   onOpenEditor: (entity: EntityName) => void;
 }) {
+  const now = useCurrentTime();
   const todayTasks = snapshot.tasks.filter(
     (task) =>
       task.dueDate === todayKey ||
       (task.startAt && localDateKey(new Date(task.startAt)) === todayKey),
   );
-  const focus =
-    todayEvents.find((item) => item.title.includes("实验方案")) ??
-    todayEvents[0];
+  const currentEvent = todayEvents.find(
+    (item) =>
+      new Date(item.startAt).getTime() <= now &&
+      now < new Date(item.endAt).getTime(),
+  );
+  const currentTask = snapshot.tasks.find(
+    (task) =>
+      task.status !== "done" &&
+      task.startAt &&
+      task.endAt &&
+      new Date(task.startAt).getTime() <= now &&
+      now < new Date(task.endAt).getTime(),
+  );
+  const currentSlot = currentEvent
+    ? {
+        title: currentEvent.title,
+        startAt: currentEvent.startAt,
+        endAt: currentEvent.endAt,
+        projectId: currentEvent.projectId,
+        kind: "event" as const,
+      }
+    : currentTask?.startAt && currentTask.endAt
+      ? {
+          title: currentTask.title,
+          startAt: currentTask.startAt,
+          endAt: currentTask.endAt,
+          projectId: currentTask.projectId,
+          kind: "task" as const,
+        }
+      : null;
   return (
     <div className="today-layout page-enter">
       <section className="today-primary">
-        <div className="focus-card">
-          <div className="focus-accent" aria-hidden="true" />
+        <div className={`current-slot-card ${currentSlot ? "is-active" : ""}`}>
+          <div className="current-slot-accent" aria-hidden="true" />
           <div>
-            <p className="eyebrow">PRIMARY FOCUS</p>
-            <h2>{focus?.title ?? "为今天选择一个主要行动"}</h2>
+            <p className="eyebrow">当前时段 · NOW</p>
+            <h2>{currentSlot?.title ?? "当前时段暂无安排"}</h2>
             <p>
-              {focus
-                ? `${formatTime(focus.startAt)}—${formatTime(focus.endAt)} · ${focus.projectId ? "项目深度工作" : "专注时间"}`
-                : "从日程或任务中安排一段专注时间。"}
+              {currentSlot
+                ? `${formatTime(currentSlot.startAt)}—${formatTime(currentSlot.endAt)} · ${
+                    currentSlot.kind === "task"
+                      ? currentSlot.projectId
+                        ? "项目任务"
+                        : "计划任务"
+                      : currentSlot.projectId
+                        ? "项目日程"
+                        : "日程"
+                  }`
+                : "查看下方时间轨，或为当前时段添加一项安排。"}
             </p>
           </div>
           <button
             className="button button--outline"
             type="button"
-            onClick={() => onOpenEditor("event")}
+            onClick={() =>
+              currentSlot ? onNavigate("calendar") : onOpenEditor("event")
+            }
           >
-            {focus ? "调整时间" : "安排专注"}
+            {currentSlot ? "查看日程" : "安排当前时段"}
           </button>
         </div>
-        <Timeline events={todayEvents} />
+        <Timeline events={todayEvents} now={now} />
       </section>
       <aside className="context-column">
         <section className="panel compact-panel">
@@ -766,7 +804,11 @@ function TodayView({
               添加任务
             </button>
           </div>
-          <div className="task-list">
+          <div
+            className="task-list scroll-region"
+            tabIndex={todayTasks.length ? 0 : undefined}
+            aria-label={`今日行动，共 ${todayTasks.length} 项`}
+          >
             {todayTasks.length ? (
               todayTasks.map((task) => (
                 <label key={task.id} className="task-row">
@@ -804,23 +846,29 @@ function TodayView({
               项目看板
             </button>
           </div>
-          {snapshot.projects.map((project) => (
-            <div className="progress-item" key={project.id}>
-              <div>
-                <strong>{project.title}</strong>
-                <span>{project.progress}%</span>
+          <div
+            className="project-list scroll-region"
+            tabIndex={snapshot.projects.length ? 0 : undefined}
+            aria-label={`推进中的项目，共 ${snapshot.projects.length} 项`}
+          >
+            {snapshot.projects.map((project) => (
+              <div className="progress-item" key={project.id}>
+                <div>
+                  <strong>{project.title}</strong>
+                  <span>{project.progress}%</span>
+                </div>
+                <div className="progress-track">
+                  <span
+                    style={{
+                      width: `${project.progress}%`,
+                      background: project.color,
+                    }}
+                  />
+                </div>
+                <p>下一步 · {project.nextAction || "确定下一步行动"}</p>
               </div>
-              <div className="progress-track">
-                <span
-                  style={{
-                    width: `${project.progress}%`,
-                    background: project.color,
-                  }}
-                />
-              </div>
-              <p>下一步 · {project.nextAction || "确定下一步行动"}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </section>
         <section className="panel compact-panel">
           <div className="panel-heading">
@@ -885,8 +933,25 @@ function TodayView({
   );
 }
 
-function Timeline({ events }: { events: CalendarEvent[] }) {
-  const hours = Array.from({ length: 11 }, (_, index) => index + 8);
+function Timeline({ events, now }: { events: CalendarEvent[]; now: number }) {
+  const hours = Array.from({ length: 17 }, (_, index) => index + 8);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const currentPosition = nowPosition(now);
+
+  useEffect(() => {
+    const scrollArea = scrollRef.current;
+    if (!scrollArea) return;
+    const minute = Math.max(
+      8 * 60,
+      Math.min(24 * 60, shanghaiClockMinutes(new Date())),
+    );
+    const ratio = (minute - 8 * 60) / (16 * 60);
+    scrollArea.scrollTop = Math.max(
+      0,
+      ratio * scrollArea.scrollHeight - scrollArea.clientHeight * 0.34,
+    );
+  }, []);
+
   return (
     <section className="panel timeline-panel" aria-labelledby="timeline-title">
       <div className="panel-heading">
@@ -894,58 +959,70 @@ function Timeline({ events }: { events: CalendarEvent[] }) {
           <p className="eyebrow">TIME RAIL</p>
           <h2 id="timeline-title">今天的时间</h2>
         </div>
-        <span>Asia / Shanghai</span>
+        <span>08:00—24:00 · Asia / Shanghai</span>
       </div>
       <div
-        className="timeline"
-        style={{ "--timeline-hours": hours.length - 1 } as CSSProperties}
+        ref={scrollRef}
+        className="timeline-scroll"
+        tabIndex={0}
+        aria-label="今日时间轨，早上八点至晚上十二点"
       >
-        {hours.map((hour) => (
-          <div
-            className="timeline-hour"
-            key={hour}
-            style={{ "--hour-index": hour - 8 } as CSSProperties}
-          >
-            <time>{String(hour).padStart(2, "0")}:00</time>
-            <span />
-          </div>
-        ))}
         <div
-          className="now-line"
-          style={{ "--now-position": nowPosition() } as CSSProperties}
+          className="timeline"
+          style={{ "--timeline-hours": hours.length - 1 } as CSSProperties}
         >
-          <span>现在</span>
-        </div>
-        {events.map((event) => {
-          const geometry = eventGeometry(event);
-          return (
-            <article
-              key={event.id}
-              className={`timeline-event ${event.title.includes("实验方案") ? "is-focus" : ""}`}
-              style={
-                {
-                  "--event-top": geometry.top,
-                  "--event-height": geometry.height,
-                  "--event-color": event.color,
-                } as CSSProperties
-              }
+          {hours.map((hour) => (
+            <div
+              className="timeline-hour"
+              key={hour}
+              style={{ "--hour-index": hour - 8 } as CSSProperties}
             >
-              <div>
-                <strong>{event.title}</strong>
-                <span>
-                  {event.source === "google"
-                    ? "Google Calendar"
-                    : event.projectId
-                      ? "项目时间"
-                      : "站内日程"}
-                </span>
-              </div>
-              <time>
-                {formatTime(event.startAt)}—{formatTime(event.endAt)}
-              </time>
-            </article>
-          );
-        })}
+              <time>{String(hour).padStart(2, "0")}:00</time>
+              <span />
+            </div>
+          ))}
+          {currentPosition ? (
+            <div
+              className="now-line"
+              style={{ "--now-position": currentPosition } as CSSProperties}
+            >
+              <span>现在</span>
+            </div>
+          ) : null}
+          {events.map((event) => {
+            const geometry = eventGeometry(event);
+            const isCurrent =
+              new Date(event.startAt).getTime() <= now &&
+              now < new Date(event.endAt).getTime();
+            return (
+              <article
+                key={event.id}
+                className={`timeline-event ${isCurrent ? "is-current" : ""}`}
+                style={
+                  {
+                    "--event-top": geometry.top,
+                    "--event-height": geometry.height,
+                    "--event-color": event.color,
+                  } as CSSProperties
+                }
+              >
+                <div>
+                  <strong>{event.title}</strong>
+                  <span>
+                    {event.source === "google"
+                      ? "Google Calendar"
+                      : event.projectId
+                        ? "项目时间"
+                        : "站内日程"}
+                  </span>
+                </div>
+                <time>
+                  {formatTime(event.startAt)}—{formatTime(event.endAt)}
+                </time>
+              </article>
+            );
+          })}
+        </div>
       </div>
     </section>
   );
@@ -2591,41 +2668,46 @@ function parseShanghaiDateTime(date: string, time: string) {
   const value = new Date(`${date}T${time}:00+08:00`);
   return Number.isNaN(value.getTime()) ? null : value.toISOString();
 }
-function nowPosition() {
-  const value = new Date();
-  const parts = new Intl.DateTimeFormat("en-US", {
+function shanghaiClockMinutes(value: Date) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone: "Asia/Shanghai",
     hour: "numeric",
     minute: "numeric",
-    hour12: false,
+    hourCycle: "h23",
   }).formatToParts(value);
-  const hour = Number(parts.find((part) => part.type === "hour")?.value ?? 8);
+  const hour = Number(parts.find((part) => part.type === "hour")?.value ?? 0);
   const minute = Number(
     parts.find((part) => part.type === "minute")?.value ?? 0,
   );
-  return `${Math.max(0, Math.min(100, ((hour + minute / 60 - 8) / 10) * 100))}%`;
+  return hour * 60 + minute;
+}
+function nowPosition(now: number) {
+  const minute = shanghaiClockMinutes(new Date(now));
+  if (minute < 8 * 60) return null;
+  return `${Math.min(100, ((minute - 8 * 60) / (16 * 60)) * 100)}%`;
 }
 function eventGeometry(event: CalendarEvent) {
   const start = new Date(event.startAt);
   const end = new Date(event.endAt);
-  const startParts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Asia/Shanghai",
-    hour: "numeric",
-    minute: "numeric",
-    hour12: false,
-  }).formatToParts(start);
-  const hour = Number(
-    startParts.find((part) => part.type === "hour")?.value ?? 8,
+  const startMinute = shanghaiClockMinutes(start);
+  const top = Math.max(
+    0,
+    Math.min(100, ((startMinute - 8 * 60) / (16 * 60)) * 100),
   );
-  const minute = Number(
-    startParts.find((part) => part.type === "minute")?.value ?? 0,
-  );
-  const top = Math.max(0, Math.min(98, ((hour + minute / 60 - 8) / 10) * 100));
   const duration = Math.max(30, (end.getTime() - start.getTime()) / 60_000);
   return {
     top: `${top}%`,
-    height: `${Math.max(5.5, Math.min(18, (duration / 600) * 100))}%`,
+    height: `${Math.max(3.125, Math.min(100 - top, (duration / (16 * 60)) * 100))}%`,
   };
+}
+
+function useCurrentTime() {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const interval = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(interval);
+  }, []);
+  return now;
 }
 function weekDays(date: Date) {
   const current = new Date(date);

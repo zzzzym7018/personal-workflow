@@ -40,3 +40,17 @@ test("keeps dialog focus stable while users type with an IME", async () => {
   assert.match(client, /\[dialogRef, initialRef\]/);
   assert.doesNotMatch(client, /\[dialogRef, initialRef, onClose\]/);
 });
+
+test("today follows the current schedule and exposes complete scrollable queues", async () => {
+  const [client, styles] = await Promise.all([
+    readFile(new URL("../app/workspace/WorkspaceApp.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+  assert.match(client, /当前时段 · NOW/);
+  assert.match(client, /Array\.from\(\{ length: 17 \}/);
+  assert.match(client, /className="timeline-scroll"/);
+  assert.match(client, /className="project-list scroll-region"/);
+  assert.doesNotMatch(client, /title\.includes\("实验方案"\)/);
+  assert.match(styles, /\.timeline-scroll \{[^}]*overflow-y: auto/);
+  assert.match(styles, /\.project-list \{[^}]*overflow-y: auto/);
+});
