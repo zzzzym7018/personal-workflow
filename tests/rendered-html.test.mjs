@@ -54,3 +54,13 @@ test("today follows the current schedule and exposes complete scrollable queues"
   assert.match(styles, /\.timeline-scroll \{[^}]*overflow-y: auto/);
   assert.match(styles, /\.project-list \{[^}]*overflow-y: auto/);
 });
+
+test("new tasks persist the date shown in the editor", async () => {
+  const client = await readFile(
+    new URL("../app/workspace/WorkspaceApp.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(client, /dueDate: entity === "task" \? date : ""/);
+  assert.match(client, /value=\{draft\.dueDate \?\? ""\}/);
+  assert.doesNotMatch(client, /draft\.dueDate \?\? draft\.date/);
+});

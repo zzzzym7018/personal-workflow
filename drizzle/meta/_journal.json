@@ -8,6 +8,13 @@
       "when": 1791529229810,
       "tag": "0000_wild_black_tarantula",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1791600195977,
+      "tag": "0001_restore_today_task_dates",
+      "breakpoints": true
     }
   ]
 }

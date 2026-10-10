@@ -288,6 +288,7 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
     setDraft({
       type: entity === "idea" ? "idea" : "",
       date,
+      dueDate: entity === "task" ? date : "",
       start: "09:00",
       end: "10:00",
       occurredDate: date,
@@ -2215,7 +2216,7 @@ function EditorDialog({
                 id="task-date"
                 label="计划日期"
                 hint="YYYY-MM-DD"
-                value={draft.dueDate ?? draft.date ?? ""}
+                value={draft.dueDate ?? ""}
                 onChange={(value) => setDraft({ ...draft, dueDate: value })}
               />
             </>
