@@ -145,18 +145,25 @@ kbd { padding: 2px 7px; border: 1px solid var(--line); border-bottom-width: 2px;
 .question-entry:hover .question-entry-arrow { color: var(--saffron); transform: translateX(2px); }
 
 .timeline-panel { padding: 20px 22px 24px; }
+.timeline-heading-meta { display: grid; justify-items: end; }
+.timeline-heading-meta span { color: var(--ink-muted); font-size: 12px; }
+.timeline-heading-meta small { color: var(--primary); font-size: 10px; }
 .timeline-scroll { min-height: 480px; max-height: min(66vh, 640px); margin-top: 17px; overflow-y: auto; overscroll-behavior: contain; border-block: 1px solid var(--line); scrollbar-gutter: stable; }
 .timeline { position: relative; height: 1024px; min-height: 1024px; margin: 12px 0 12px 2px; }
-.timeline-hour { position: absolute; inset: calc(var(--hour-index) / var(--timeline-hours) * 100%) 0 auto 0; display: grid; grid-template-columns: 57px 1fr; align-items: center; transform: translateY(-50%); }
+.timeline-create-layer { position: absolute; z-index: 0; inset: 0; width: 100%; padding: 0; border: 0; background: transparent; cursor: crosshair; transition: background 160ms ease; }
+.timeline-create-layer:hover { background: rgba(52, 73, 164, 0.025); }
+.timeline-create-layer:active { background: rgba(52, 73, 164, 0.055); }
+.timeline-create-layer:focus-visible { outline: 3px solid color-mix(in srgb, var(--focus), transparent 58%); outline-offset: -3px; }
+.timeline-hour { position: absolute; z-index: 1; inset: calc(var(--hour-index) / var(--timeline-hours) * 100%) 0 auto 0; display: grid; grid-template-columns: 57px 1fr; align-items: center; pointer-events: none; transform: translateY(-50%); }
 .timeline-hour time { color: #81909f; font-family: var(--font-mono); font-size: 10px; }
 .timeline-hour span { border-top: 1px solid #e6ebee; }
-.timeline-event { position: absolute; top: var(--event-top); right: 8px; left: 65px; display: flex; min-height: 46px; height: var(--event-height); align-items: flex-start; justify-content: space-between; gap: 12px; padding: 9px 12px 9px 15px; overflow: hidden; border: 1px solid color-mix(in srgb, var(--event-color), white 68%); border-left: 4px solid var(--event-color); border-radius: 9px; background: color-mix(in srgb, var(--event-color), white 91%); }
+.timeline-event { position: absolute; z-index: 3; top: var(--event-top); right: 8px; left: 65px; display: flex; min-height: 46px; height: var(--event-height); align-items: flex-start; justify-content: space-between; gap: 12px; padding: 9px 12px 9px 15px; overflow: hidden; border: 1px solid color-mix(in srgb, var(--event-color), white 68%); border-left: 4px solid var(--event-color); border-radius: 9px; background: color-mix(in srgb, var(--event-color), white 91%); }
 .timeline-event.is-current { box-shadow: 0 8px 24px rgba(52, 73, 164, 0.16); outline: 2px solid color-mix(in srgb, var(--event-color), transparent 72%); outline-offset: 1px; }
 .timeline-event div { display: grid; min-width: 0; }
 .timeline-event strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .timeline-event span, .timeline-event time { color: var(--ink-muted); font-size: 11px; }
 .timeline-event time { flex: 0 0 auto; font-family: var(--font-mono); }
-.now-line { position: absolute; z-index: 2; top: var(--now-position); right: 0; left: 57px; border-top: 1px solid var(--danger); }
+.now-line { position: absolute; z-index: 4; top: var(--now-position); right: 0; left: 57px; border-top: 1px solid var(--danger); pointer-events: none; }
 .now-line::before { position: absolute; top: -4px; left: 0; width: 7px; height: 7px; border-radius: 50%; background: var(--danger); content: ""; }
 .now-line span { position: absolute; top: -10px; right: 0; padding: 0 4px; color: var(--danger); background: white; font-size: 9px; }
 
@@ -171,10 +178,12 @@ kbd { padding: 2px 7px; border: 1px solid var(--line); border-bottom-width: 2px;
 .week-header small { color: var(--ink-muted); }
 .week-header .is-today strong { color: var(--primary); }
 .week-row { min-height: 620px; }
-.week-row > span { padding: 9px; color: var(--ink-muted); font-family: var(--font-mono); font-size: 10px; }
-.week-grid { position: relative; display: grid; grid-column: 2 / -1; grid-template-columns: repeat(7, 1fr); margin-left: -1px; }
-.week-grid::before { position: absolute; inset: 0; background: repeating-linear-gradient(to bottom, transparent 0, transparent 61px, #edf1f3 62px); content: ""; pointer-events: none; }
-.week-grid > div { position: relative; min-height: 620px; border-left: 1px solid #edf1f3; }
+.week-row > time { padding: 9px; color: var(--ink-muted); font-family: var(--font-mono); font-size: 10px; }
+.week-cell { position: relative; min-height: 62px; border-left: 1px solid #edf1f3; border-bottom: 1px solid #edf1f3; }
+.week-slot-button { position: absolute; z-index: 0; inset: 0; width: 100%; padding: 0; border: 0; background: transparent; cursor: pointer; transition: background 160ms ease, box-shadow 160ms ease; }
+.week-slot-button:hover { background: rgba(52, 73, 164, 0.055); }
+.week-slot-button:active { background: rgba(52, 73, 164, 0.09); }
+.week-slot-button:focus-visible { outline: 3px solid color-mix(in srgb, var(--focus), transparent 58%); outline-offset: -3px; }
 .week-event { position: absolute; z-index: 1; top: var(--event-top); right: 5px; left: 5px; min-height: 40px; height: var(--event-height); padding: 6px 7px; overflow: hidden; border: 1px solid color-mix(in srgb, var(--event-color), white 65%); border-left: 3px solid var(--event-color); border-radius: 7px; background: color-mix(in srgb, var(--event-color), white 90%); text-align: left; }
 .week-event strong, .week-event span { display: block; overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 .week-event strong { font-size: 11px; }

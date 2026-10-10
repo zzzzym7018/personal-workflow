@@ -4,6 +4,7 @@ import type {
   CSSProperties,
   FormEvent,
   KeyboardEvent as ReactKeyboardEvent,
+  MouseEvent as ReactMouseEvent,
 } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -281,7 +282,7 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
     document.querySelector<HTMLElement>("#workspace-main")?.focus();
   }
 
-  function openEditor(entity: EntityName) {
+  function openEditor(entity: EntityName, defaults: EditorDraft = {}) {
     const date = localDateKey(new Date());
     setEditor(entity);
     setEditorError("");
@@ -295,6 +296,7 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
       minutes: "45",
       stage: "1",
       progress: "0",
+      ...defaults,
     });
   }
 
@@ -554,7 +556,7 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
               {activeView === "calendar" ? (
                 <CalendarView
                   events={snapshot.events}
-                  onCreate={() => openEditor("event")}
+                  onCreate={(defaults) => openEditor("event", defaults)}
                   onArchive={(item) =>
                     setArchiveTarget({
                       entity: "event",
@@ -718,7 +720,7 @@ function TodayView({
   todayKey: string;
   onNavigate: (view: ViewKey) => void;
   onToggleTask: (task: Task) => void;
-  onOpenEditor: (entity: EntityName) => void;
+  onOpenEditor: (entity: EntityName, defaults?: EditorDraft) => void;
 }) {
   const now = useCurrentTime();
   const todayTasks = snapshot.tasks.filter(
@@ -788,7 +790,12 @@ function TodayView({
             {currentSlot ? "查看日程" : "安排当前时段"}
           </button>
         </div>
-        <Timeline events={todayEvents} now={now} />
+        <Timeline
+          events={todayEvents}
+          now={now}
+          dateKey={todayKey}
+          onCreateAt={(defaults) => onOpenEditor("event", defaults)}
+        />
       </section>
       <aside className="context-column">
         <section className="panel compact-panel">
@@ -934,7 +941,17 @@ function TodayView({
   );
 }
 
-function Timeline({ events, now }: { events: CalendarEvent[]; now: number }) {
+function Timeline({
+  events,
+  now,
+  dateKey,
+  onCreateAt,
+}: {
+  events: CalendarEvent[];
+  now: number;
+  dateKey: string;
+  onCreateAt: (defaults: EditorDraft) => void;
+}) {
   const hours = Array.from({ length: 17 }, (_, index) => index + 8);
   const scrollRef = useRef<HTMLDivElement>(null);
   const currentPosition = nowPosition(now);
@@ -953,6 +970,21 @@ function Timeline({ events, now }: { events: CalendarEvent[]; now: number }) {
     );
   }, []);
 
+  function createFromRail(event: ReactMouseEvent<HTMLButtonElement>) {
+    const currentMinute = shanghaiClockMinutes(new Date(now));
+    const minute =
+      event.detail === 0
+        ? Math.ceil(currentMinute / 15) * 15
+        : 8 * 60 +
+          Math.round(
+            ((event.clientY - event.currentTarget.getBoundingClientRect().top) /
+              event.currentTarget.getBoundingClientRect().height) *
+              64,
+          ) *
+            15;
+    onCreateAt(eventDraft(dateKey, minute));
+  }
+
   return (
     <section className="panel timeline-panel" aria-labelledby="timeline-title">
       <div className="panel-heading">
@@ -960,7 +992,10 @@ function Timeline({ events, now }: { events: CalendarEvent[]; now: number }) {
           <p className="eyebrow">TIME RAIL</p>
           <h2 id="timeline-title">今天的时间</h2>
         </div>
-        <span>08:00—24:00 · Asia / Shanghai</span>
+        <div className="timeline-heading-meta">
+          <span>08:00—24:00 · Asia / Shanghai</span>
+          <small>点击空白时间快速添加</small>
+        </div>
       </div>
       <div
         ref={scrollRef}
@@ -972,6 +1007,12 @@ function Timeline({ events, now }: { events: CalendarEvent[]; now: number }) {
           className="timeline"
           style={{ "--timeline-hours": hours.length - 1 } as CSSProperties}
         >
+          <button
+            className="timeline-create-layer"
+            type="button"
+            aria-label="在时间轨选择时间并新建日程"
+            onClick={createFromRail}
+          />
           {hours.map((hour) => (
             <div
               className="timeline-hour"
@@ -1038,7 +1079,7 @@ function CalendarView({
   syncing,
 }: {
   events: CalendarEvent[];
-  onCreate: () => void;
+  onCreate: (defaults?: EditorDraft) => void;
   onArchive: (event: CalendarEvent) => void;
   googleStatus: GoogleStatus | null;
   onSync: () => void;
@@ -1052,7 +1093,7 @@ function CalendarView({
         <div>
           <p className="eyebrow">CALENDAR</p>
           <h2>把承诺放进时间，而不是留在列表里</h2>
-          <p>站内日程与选中的 Google 日历保持双向同步。</p>
+          <p>站内日程与选中的 Google 日历保持双向同步；点击周视图空白时段可快速添加。</p>
         </div>
         <div className="intro-actions">
           <div className="segmented" role="group" aria-label="日历视图">
@@ -1078,7 +1119,7 @@ function CalendarView({
           <button
             className="button button--primary"
             type="button"
-            onClick={onCreate}
+            onClick={() => onCreate()}
           >
             ＋ 新建日程
           </button>
@@ -1100,7 +1141,13 @@ function CalendarView({
               <div className="week-row" key={hour}>
                 <time>{String(hour).padStart(2, "0")}:00</time>
                 {days.map((day) => (
-                  <div key={day.key}>
+                  <div className="week-cell" key={day.key}>
+                    <button
+                      className="week-slot-button"
+                      type="button"
+                      aria-label={`${day.weekday} ${day.day} 日 ${String(hour).padStart(2, "0")}:00 新建日程`}
+                      onClick={() => onCreate(eventDraft(day.key, hour * 60))}
+                    />
                     {events
                       .filter(
                         (event) =>
@@ -2668,6 +2715,20 @@ function parseShanghaiDateTime(date: string, time: string) {
     return null;
   const value = new Date(`${date}T${time}:00+08:00`);
   return Number.isNaN(value.getTime()) ? null : value.toISOString();
+}
+function clockLabel(minutes: number) {
+  const bounded = Math.max(0, Math.min(24 * 60, minutes));
+  const hour = Math.floor(bounded / 60);
+  const minute = bounded % 60;
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+function eventDraft(date: string, requestedMinute: number): EditorDraft {
+  const startMinute = Math.max(8 * 60, Math.min(23 * 60, requestedMinute));
+  return {
+    date,
+    start: clockLabel(startMinute),
+    end: clockLabel(startMinute + 60),
+  };
 }
 function shanghaiClockMinutes(value: Date) {
   const parts = new Intl.DateTimeFormat("en-GB", {

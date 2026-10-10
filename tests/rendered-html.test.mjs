@@ -64,3 +64,17 @@ test("new tasks persist the date shown in the editor", async () => {
   assert.match(client, /value=\{draft\.dueDate \?\? ""\}/);
   assert.doesNotMatch(client, /draft\.dueDate \?\? draft\.date/);
 });
+
+test("calendar grids open the shared event editor with time defaults", async () => {
+  const [client, styles] = await Promise.all([
+    readFile(new URL("../app/workspace/WorkspaceApp.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+  assert.match(client, /function openEditor\(entity: EntityName, defaults: EditorDraft = \{\}\)/);
+  assert.match(client, /className="timeline-create-layer"/);
+  assert.match(client, /className="week-slot-button"/);
+  assert.match(client, /onCreate\(eventDraft\(day\.key, hour \* 60\)\)/);
+  assert.match(client, /点击空白时间快速添加/);
+  assert.match(styles, /\.timeline-create-layer:focus-visible/);
+  assert.match(styles, /\.week-slot-button:focus-visible/);
+});
