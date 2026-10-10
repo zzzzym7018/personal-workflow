@@ -174,6 +174,7 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
   const [googleStatus, setGoogleStatus] = useState<GoogleStatus | null>(null);
   const [syncing, setSyncing] = useState(false);
   const quickAddRef = useRef<HTMLButtonElement>(null);
+  const editorReturnFocusIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -290,6 +291,7 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
 
   function openEditor(entity: EntityName, defaults: EditorDraft = {}) {
     const date = localDateKey(new Date());
+    editorReturnFocusIdRef.current = null;
     setEditor(entity);
     setEditorTargetId(null);
     setEditorError("");
@@ -307,6 +309,7 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
   }
 
   function openEventEditor(event: CalendarEvent) {
+    editorReturnFocusIdRef.current = null;
     setEditor("event");
     setEditorTargetId(event.id);
     setEditorError("");
@@ -316,6 +319,18 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
       start: formatTime(event.startAt),
       end: formatTime(event.endAt),
       note: event.notes,
+    });
+  }
+
+  function openProjectEditor(project: Project) {
+    editorReturnFocusIdRef.current = `project-edit-${project.id}`;
+    setEditor("project");
+    setEditorTargetId(project.id);
+    setEditorError("");
+    setDraft({
+      title: project.title,
+      description: project.description,
+      deadline: project.deadline ?? "",
     });
   }
 
@@ -362,6 +377,8 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
           result.error || (editing ? "保存失败，请重试。 " : "创建失败，请重试。 "),
         );
       await loadWorkspace();
+      const returnFocusId = editorReturnFocusIdRef.current;
+      editorReturnFocusIdRef.current = null;
       setEditor(null);
       setEditorTargetId(null);
       notify(
@@ -372,7 +389,10 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
             : `${entityLabel(editor)}已创建`,
       );
       window.setTimeout(
-        () => document.querySelector<HTMLElement>("#workspace-main")?.focus(),
+        () =>
+          (returnFocusId
+            ? document.getElementById(returnFocusId)
+            : document.querySelector<HTMLElement>("#workspace-main"))?.focus(),
         0,
       );
     } catch (reason) {
@@ -612,6 +632,7 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
                   projects={snapshot.projects}
                   tasks={snapshot.tasks}
                   onCreate={() => openEditor("project")}
+                  onEdit={openProjectEditor}
                   onCreateSubgoal={(projectId) =>
                     openEditor("task", { projectId, dueDate: "" })
                   }
@@ -695,9 +716,17 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
           editing={Boolean(editorTargetId)}
           snapshot={snapshot}
           onClose={() => {
+            const returnFocusId = editorReturnFocusIdRef.current;
+            editorReturnFocusIdRef.current = null;
             setEditor(null);
             setEditorTargetId(null);
-            window.setTimeout(() => quickAddRef.current?.focus(), 0);
+            window.setTimeout(
+              () =>
+                (returnFocusId
+                  ? document.getElementById(returnFocusId)
+                  : quickAddRef.current)?.focus(),
+              0,
+            );
           }}
           onSubmit={createItem}
         />
@@ -1438,6 +1467,7 @@ function ProjectsView({
   projects,
   tasks,
   onCreate,
+  onEdit,
   onCreateSubgoal,
   onUpdate,
   onArchive,
@@ -1445,6 +1475,7 @@ function ProjectsView({
   projects: Project[];
   tasks: Task[];
   onCreate: () => void;
+  onEdit: (project: Project) => void;
   onCreateSubgoal: (projectId: string) => void;
   onUpdate: (
     entity: EntityName,
@@ -1484,6 +1515,13 @@ function ProjectsView({
             key={project.id}
             style={{ "--project-color": project.color } as CSSProperties}
           >
+            <button
+              id={`project-edit-${project.id}`}
+              className="project-card-edit-target"
+              type="button"
+              aria-label={`编辑项目 ${project.title}`}
+              onClick={() => onEdit(project)}
+            />
             <div className="project-card-head">
               <span className="project-code">
                 P-{project.id.slice(-2).toUpperCase()}
@@ -2427,7 +2465,7 @@ function EditorDialog({
               {entity === "domain"
                 ? "当前理解"
                 : entity === "project"
-                  ? "项目说明"
+                  ? "项目笔记"
                   : entity === "task" && draft.projectId
                     ? "子目标说明"
                   : "笔记"}

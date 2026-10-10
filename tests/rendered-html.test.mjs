@@ -119,7 +119,16 @@ test("projects own checkable subgoals while calendar events stay independent", a
   assert.match(client, /onCreateSubgoal=\{\(projectId\)/);
   assert.match(client, /className="project-subgoal-row"/);
   assert.match(client, /checked=\{task\.status === "done"\}/);
+  assert.match(client, /function openProjectEditor\(project: Project\)/);
+  assert.match(client, /onEdit=\{openProjectEditor\}/);
+  assert.match(client, /id=\{`project-edit-\$\{project\.id\}`\}/);
+  assert.match(client, /className="project-card-edit-target"/);
+  assert.match(client, /description: project\.description/);
+  assert.match(client, /deadline: project\.deadline \?\? ""/);
+  assert.match(client, /document\.getElementById\(returnFocusId\)/);
   assert.doesNotMatch(client, /id="project-progress"|−10%|＋10%|id="task-project"/);
+  assert.match(api, /data\.description !== undefined/);
+  assert.match(api, /data\.deadline !== undefined/);
   assert.match(api, /syncStatus: "pending", projectId: null/);
   assert.match(google, /projectId: null/);
   assert.match(migration, /UPDATE `events`[\s\S]*`project_id` = NULL/);
