@@ -159,6 +159,7 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [editor, setEditor] = useState<EntityName | null>(null);
+  const [editorTargetId, setEditorTargetId] = useState<string | null>(null);
   const [draft, setDraft] = useState<EditorDraft>({});
   const [editorError, setEditorError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -290,6 +291,7 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
   function openEditor(entity: EntityName, defaults: EditorDraft = {}) {
     const date = localDateKey(new Date());
     setEditor(entity);
+    setEditorTargetId(null);
     setEditorError("");
     setDraft({
       type: entity === "idea" ? "idea" : "",
@@ -301,6 +303,19 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
       minutes: "45",
       stage: "1",
       ...defaults,
+    });
+  }
+
+  function openEventEditor(event: CalendarEvent) {
+    setEditor("event");
+    setEditorTargetId(event.id);
+    setEditorError("");
+    setDraft({
+      title: event.title,
+      date: localDateKey(new Date(event.startAt)),
+      start: formatTime(event.startAt),
+      end: formatTime(event.endAt),
+      note: event.notes,
     });
   }
 
@@ -330,19 +345,30 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
     }
     setSaving(true);
     try {
+      const editing = Boolean(editorTargetId);
       const response = await fetch("/api/workspace", {
-        method: "POST",
+        method: editing ? "PATCH" : "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ entity: editor, data }),
+        body: JSON.stringify({
+          entity: editor,
+          ...(editorTargetId ? { id: editorTargetId } : {}),
+          data,
+        }),
       });
       const result = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(result.error || "创建失败，请重试。 ");
+      if (!response.ok)
+        throw new Error(
+          result.error || (editing ? "保存失败，请重试。 " : "创建失败，请重试。 "),
+        );
       await loadWorkspace();
       setEditor(null);
+      setEditorTargetId(null);
       notify(
-        editor === "task" && draft.projectId
-          ? "子目标已创建"
-          : `${entityLabel(editor)}已创建`,
+        editing
+          ? `${entityLabel(editor)}已更新`
+          : editor === "task" && draft.projectId
+            ? "子目标已创建"
+            : `${entityLabel(editor)}已创建`,
       );
       window.setTimeout(
         () => document.querySelector<HTMLElement>("#workspace-main")?.focus(),
@@ -350,7 +376,7 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
       );
     } catch (reason) {
       setEditorError(
-        reason instanceof Error ? reason.message : "创建失败，请重试。 ",
+        reason instanceof Error ? reason.message : "保存失败，请重试。 ",
       );
     } finally {
       setSaving(false);
@@ -561,6 +587,7 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
                     )
                   }
                   onOpenEditor={openEditor}
+                  onEditEvent={openEventEditor}
                 />
               ) : null}
               {activeView === "calendar" ? (
@@ -664,9 +691,11 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
           setDraft={setDraft}
           error={editorError}
           saving={saving}
+          editing={Boolean(editorTargetId)}
           snapshot={snapshot}
           onClose={() => {
             setEditor(null);
+            setEditorTargetId(null);
             window.setTimeout(() => quickAddRef.current?.focus(), 0);
           }}
           onSubmit={createItem}
@@ -727,6 +756,7 @@ function TodayView({
   onNavigate,
   onToggleTask,
   onOpenEditor,
+  onEditEvent,
 }: {
   snapshot: Snapshot;
   todayEvents: CalendarEvent[];
@@ -734,6 +764,7 @@ function TodayView({
   onNavigate: (view: ViewKey) => void;
   onToggleTask: (task: Task) => void;
   onOpenEditor: (entity: EntityName, defaults?: EditorDraft) => void;
+  onEditEvent: (event: CalendarEvent) => void;
 }) {
   const now = useCurrentTime();
   const todayTasks = snapshot.tasks.filter(
@@ -806,6 +837,7 @@ function TodayView({
           now={now}
           dateKey={todayKey}
           onCreateAt={(defaults) => onOpenEditor("event", defaults)}
+          onEditEvent={onEditEvent}
         />
       </section>
       <aside className="context-column">
@@ -976,11 +1008,13 @@ function Timeline({
   now,
   dateKey,
   onCreateAt,
+  onEditEvent,
 }: {
   events: CalendarEvent[];
   now: number;
   dateKey: string;
   onCreateAt: (defaults: EditorDraft) => void;
+  onEditEvent: (event: CalendarEvent) => void;
 }) {
   const hours = Array.from({ length: 17 }, (_, index) => index + 8);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -1067,7 +1101,8 @@ function Timeline({
               new Date(event.startAt).getTime() <= now &&
               now < new Date(event.endAt).getTime();
             return (
-              <article
+              <button
+                type="button"
                 key={event.id}
                 className={`timeline-event ${isCurrent ? "is-current" : ""}`}
                 style={
@@ -1077,6 +1112,8 @@ function Timeline({
                     "--event-color": event.color,
                   } as CSSProperties
                 }
+                aria-label={`编辑日程 ${event.title}，${formatTime(event.startAt)} 至 ${formatTime(event.endAt)}`}
+                onClick={() => onEditEvent(event)}
               >
                 <div>
                   <strong>{event.title}</strong>
@@ -1089,7 +1126,7 @@ function Timeline({
                 <time>
                   {formatTime(event.startAt)}—{formatTime(event.endAt)}
                 </time>
-              </article>
+              </button>
             );
           })}
         </div>
@@ -1182,6 +1219,7 @@ function WeekCalendar({
   const now = useCurrentTime();
   const scrollRef = useRef<HTMLDivElement>(null);
   const currentPosition = nowPosition(now);
+  const todayIndex = days.findIndex((day) => day.isToday);
 
   useEffect(() => {
     const scrollArea = scrollRef.current;
@@ -1195,7 +1233,14 @@ function WeekCalendar({
       0,
       ratio * 1024 - scrollArea.clientHeight * 0.32,
     );
-  }, []);
+    if (todayIndex > 0) {
+      const dayWidth = (scrollArea.scrollWidth - 76) / 7;
+      scrollArea.scrollLeft = Math.max(
+        0,
+        76 + dayWidth * todayIndex - scrollArea.clientWidth * 0.62,
+      );
+    }
+  }, [todayIndex]);
 
   function createFromDay(
     event: ReactMouseEvent<HTMLButtonElement>,
@@ -1223,7 +1268,7 @@ function WeekCalendar({
           <strong>本周时间安排</strong>
           <span>08:00—24:00 · Asia / Shanghai</span>
         </div>
-        <small>点击空白处，以 15 分钟为单位新建日程</small>
+        <small>横向滑动查看本周 · 点击空白处新建日程</small>
       </div>
       <div
         ref={scrollRef}
@@ -2172,6 +2217,7 @@ function EditorDialog({
   setDraft,
   error,
   saving,
+  editing,
   snapshot,
   onClose,
   onSubmit,
@@ -2181,6 +2227,7 @@ function EditorDialog({
   setDraft: (draft: EditorDraft) => void;
   error: string;
   saving: boolean;
+  editing: boolean;
   snapshot: Snapshot | null;
   onClose: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
@@ -2207,7 +2254,9 @@ function EditorDialog({
         <header>
           <div>
             <p className="eyebrow">QUICK CAPTURE</p>
-            <h2 id="editor-dialog-title">创建{label}</h2>
+            <h2 id="editor-dialog-title">
+              {editing ? `编辑${label}` : `创建${label}`}
+            </h2>
           </div>
           <button
             className="icon-button"
@@ -2437,7 +2486,13 @@ function EditorDialog({
               type="submit"
               disabled={saving}
             >
-              {saving ? "正在创建…" : `创建${label}`}
+              {saving
+                ? editing
+                  ? "正在保存…"
+                  : "正在创建…"
+                : editing
+                  ? "保存更改"
+                  : `创建${label}`}
             </button>
           </footer>
         </form>

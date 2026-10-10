@@ -50,8 +50,14 @@ test("today follows the current schedule and exposes complete scrollable queues"
   assert.match(client, /Array\.from\(\{ length: 17 \}/);
   assert.match(client, /className="timeline-scroll"/);
   assert.match(client, /className="project-list scroll-region"/);
+  assert.match(client, /function openEventEditor\(event: CalendarEvent\)/);
+  assert.match(client, /onClick=\{\(\) => onEditEvent\(event\)\}/);
+  assert.match(client, /method: editing \? "PATCH" : "POST"/);
+  assert.match(client, /editing\s*\? "保存更改"/);
   assert.doesNotMatch(client, /title\.includes\("实验方案"\)/);
   assert.match(styles, /\.timeline-scroll \{[^}]*overflow-y: auto/);
+  assert.match(styles, /\.timeline-event \{[^}]*cursor: pointer/);
+  assert.match(styles, /\.timeline-event:focus-visible/);
   assert.match(styles, /\.project-list \{[^}]*overflow-y: auto/);
 });
 
@@ -80,6 +86,9 @@ test("calendar grids open the shared event editor with time defaults", async () 
   assert.match(styles, /\.timeline-create-layer:focus-visible/);
   assert.match(styles, /\.week-day-create-layer:focus-visible/);
   assert.match(styles, /\.week-calendar-body \{[^}]*height: 1024px/);
+  assert.match(styles, /\.week-calendar-canvas \{[^}]*min-width: 1546px/);
+  assert.match(styles, /\.week-calendar-scroll \{[^}]*scroll-snap-type: x proximity/);
+  assert.match(client, /scrollArea\.scrollLeft = Math\.max/);
 });
 
 test("projects own checkable subgoals while calendar events stay independent", async () => {
