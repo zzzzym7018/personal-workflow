@@ -363,7 +363,7 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
     setEditorError("");
     if (!draft.title?.trim()) {
       setEditorError("请先填写标题。 ");
-      document.querySelector<HTMLInputElement>("#editor-title")?.focus();
+      document.querySelector<HTMLElement>("#editor-title")?.focus();
       return;
     }
     const data: Record<string, unknown> = { ...draft };
@@ -2510,11 +2510,29 @@ function EditorDialog({
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onDelete?: () => void;
 }) {
-  const titleRef = useRef<HTMLInputElement>(null);
+  const titleRef = useRef<HTMLElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   useDialogFocus(dialogRef, titleRef, onClose, !suspended);
   const label =
     entity === "task" && draft.projectId ? "子目标" : entityLabel(entity);
+
+  useEffect(() => {
+    if (!(titleRef.current instanceof HTMLTextAreaElement)) return;
+    titleRef.current.style.height = "auto";
+    titleRef.current.style.height = `${Math.min(titleRef.current.scrollHeight, 144)}px`;
+  }, [draft.title, entity]);
+
+  const titleFieldProps = {
+    id: "editor-title",
+    value: draft.title ?? "",
+    onChange: (
+      event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    ) => setDraft({ ...draft, title: event.target.value }),
+    "aria-invalid": Boolean(error && !draft.title?.trim()),
+    "aria-describedby": error ? "editor-error" : undefined,
+    placeholder:
+      entity === "idea" ? "记录一个想法或疑问…" : `填写${label}标题…`,
+  };
   return (
     <div
       className="modal-backdrop"
@@ -2551,19 +2569,23 @@ function EditorDialog({
         <form noValidate onSubmit={onSubmit}>
           <div className="field-group">
             <label htmlFor="editor-title">标题</label>
-            <input
-              ref={titleRef}
-              id="editor-title"
-              value={draft.title ?? ""}
-              onChange={(event) =>
-                setDraft({ ...draft, title: event.target.value })
-              }
-              aria-invalid={Boolean(error && !draft.title?.trim())}
-              aria-describedby={error ? "editor-error" : undefined}
-              placeholder={
-                entity === "idea" ? "记录一个想法或疑问…" : `填写${label}标题…`
-              }
-            />
+            {entity === "idea" ? (
+              <textarea
+                {...titleFieldProps}
+                ref={(node) => {
+                  titleRef.current = node;
+                }}
+                className="editor-title-textarea resize-none"
+                rows={2}
+              />
+            ) : (
+              <input
+                {...titleFieldProps}
+                ref={(node) => {
+                  titleRef.current = node;
+                }}
+              />
+            )}
           </div>
           {entity === "idea" ? (
             <div

@@ -175,6 +175,9 @@ test("idea and question cards open a prefilled shared editor", async () => {
   assert.match(client, /domainId: idea\.domainId \?\? ""/);
   assert.match(client, /id="idea-domain"/);
   assert.match(client, /id="idea-project"/);
+  assert.match(client, /className="editor-title-textarea resize-none"/);
+  assert.match(client, /Math\.min\(titleRef\.current\.scrollHeight, 144\)/);
   assert.match(api, /data\.type !== undefined/);
   assert.match(styles, /\.idea-card-edit-target/);
+  assert.match(styles, /\.editor-title-textarea \{[^}]*min-height: 64px[^}]*max-height: 144px/);
 });

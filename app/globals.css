@@ -380,6 +380,7 @@ kbd { padding: 2px 7px; border: 1px solid var(--line); border-bottom-width: 2px;
 .field-group label span { color: var(--ink-muted); font-family: var(--font-mono); font-size: 9px; font-weight: 400; }
 .field-group input, .field-group textarea, .field-group select { width: 100%; min-height: 42px; padding: 9px 11px; border: 1px solid #ccd6dd; border-radius: 9px; background: white; transition: border-color 160ms ease, box-shadow 160ms ease; }
 .field-group textarea { line-height: 1.6; }
+.field-group .editor-title-textarea { min-height: 64px; max-height: 144px; overflow-y: auto; line-height: 1.5; }
 .field-group input:hover, .field-group textarea:hover, .field-group select:hover { border-color: #aebbc5; }
 .field-group input:focus, .field-group textarea:focus, .field-group select:focus { border-color: var(--focus); outline: 0; box-shadow: 0 0 0 3px rgba(82, 103, 199, 0.15); }
 .field-group [aria-invalid="true"] { border-color: var(--danger); }

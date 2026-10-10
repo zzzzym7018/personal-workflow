@@ -105,7 +105,7 @@
 - Manual typed schema for v1 with server revalidation。
 - Validate on submit, then on change for fields already in error。
 - Long forms show summary plus inline association; first invalid field receives focus。
-- All product forms use `noValidate`; textareas use `resize: none`。
+- All product forms use `noValidate`; textareas use `resize: none`。Idea/疑问标题使用自动增高的多行字段，其他实体标题保持单行。
 
 ## Permission and clipboard
 
