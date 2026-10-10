@@ -300,7 +300,6 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
       occurredDate: date,
       minutes: "45",
       stage: "1",
-      progress: "0",
       ...defaults,
     });
   }
@@ -340,7 +339,11 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
       if (!response.ok) throw new Error(result.error || "创建失败，请重试。 ");
       await loadWorkspace();
       setEditor(null);
-      notify(`${entityLabel(editor)}已创建`);
+      notify(
+        editor === "task" && draft.projectId
+          ? "子目标已创建"
+          : `${entityLabel(editor)}已创建`,
+      );
       window.setTimeout(
         () => document.querySelector<HTMLElement>("#workspace-main")?.focus(),
         0,
@@ -499,6 +502,8 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
                 openEditor(
                   activeView === "calendar"
                     ? "event"
+                    : activeView === "projects"
+                      ? "project"
                     : activeView === "ideas"
                       ? "idea"
                       : activeView === "learning"
@@ -579,6 +584,9 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
                   projects={snapshot.projects}
                   tasks={snapshot.tasks}
                   onCreate={() => openEditor("project")}
+                  onCreateSubgoal={(projectId) =>
+                    openEditor("task", { projectId, dueDate: "" })
+                  }
                   onUpdate={updateItem}
                   onArchive={(item) =>
                     setArchiveTarget({
@@ -776,11 +784,9 @@ function TodayView({
                 ? `${formatTime(currentSlot.startAt)}—${formatTime(currentSlot.endAt)} · ${
                     currentSlot.kind === "task"
                       ? currentSlot.projectId
-                        ? "项目任务"
+                        ? "项目子目标"
                         : "计划任务"
-                      : currentSlot.projectId
-                        ? "项目日程"
-                        : "日程"
+                      : "日程"
                   }`
                 : "查看下方时间轨，或为当前时段添加一项安排。"}
             </p>
@@ -834,7 +840,7 @@ function TodayView({
                     {task.title}
                   </span>
                   <span className="tag">
-                    {task.projectId ? "项目" : "任务"}
+                    {task.projectId ? "子目标" : "任务"}
                   </span>
                 </label>
               ))
@@ -865,21 +871,11 @@ function TodayView({
             aria-label={`推进中的项目，共 ${snapshot.projects.length} 项`}
           >
             {snapshot.projects.map((project) => (
-              <div className="progress-item" key={project.id}>
-                <div>
-                  <strong>{project.title}</strong>
-                  <span>{project.progress}%</span>
-                </div>
-                <div className="progress-track">
-                  <span
-                    style={{
-                      width: `${project.progress}%`,
-                      background: project.color,
-                    }}
-                  />
-                </div>
-                <p>下一步 · {project.nextAction || "确定下一步行动"}</p>
-              </div>
+              <ProjectSummaryItem
+                key={project.id}
+                project={project}
+                tasks={snapshot.tasks}
+              />
             ))}
           </div>
         </section>
@@ -942,6 +938,35 @@ function TodayView({
           </button>
         </section>
       </aside>
+    </div>
+  );
+}
+
+function ProjectSummaryItem({
+  project,
+  tasks,
+}: {
+  project: Project;
+  tasks: Task[];
+}) {
+  const subgoals = tasks.filter((task) => task.projectId === project.id);
+  const completed = subgoals.filter((task) => task.status === "done").length;
+  const nextSubgoal = subgoals.find((task) => task.status !== "done");
+  return (
+    <div className="project-summary-item">
+      <div>
+        <strong>{project.title}</strong>
+        <span>
+          {completed}/{subgoals.length} 完成
+        </span>
+      </div>
+      <p>
+        {nextSubgoal
+          ? `下一项 · ${nextSubgoal.title}`
+          : subgoals.length
+            ? "所有子目标已完成"
+            : "还没有子目标"}
+      </p>
     </div>
   );
 }
@@ -1058,9 +1083,7 @@ function Timeline({
                   <span>
                     {event.source === "google"
                       ? "Google Calendar"
-                      : event.projectId
-                        ? "项目时间"
-                        : "站内日程"}
+                      : "站内日程"}
                   </span>
                 </div>
                 <time>
@@ -1297,9 +1320,7 @@ function WeekCalendar({
                           <span>
                             {event.source === "google"
                               ? "Google Calendar"
-                              : event.projectId
-                                ? "项目时间"
-                                : "站内日程"}
+                              : "站内日程"}
                           </span>
                         </button>
                       );
@@ -1371,12 +1392,14 @@ function ProjectsView({
   projects,
   tasks,
   onCreate,
+  onCreateSubgoal,
   onUpdate,
   onArchive,
 }: {
   projects: Project[];
   tasks: Task[];
   onCreate: () => void;
+  onCreateSubgoal: (projectId: string) => void;
   onUpdate: (
     entity: EntityName,
     id: string,
@@ -1385,18 +1408,13 @@ function ProjectsView({
   ) => void;
   onArchive: (project: Project) => void;
 }) {
-  const statuses = [
-    { key: "todo", label: "待开始" },
-    { key: "doing", label: "进行中" },
-    { key: "done", label: "已完成" },
-  ];
   return (
     <div className="page-stack page-enter">
       <section className="page-intro">
         <div>
           <p className="eyebrow">PROJECTS</p>
-          <h2>每个项目都应该有清楚的下一步</h2>
-          <p>在看板中推进任务，在项目卡中维护里程碑和整体进度。</p>
+          <h2>把大型工程拆成可以完成的子目标</h2>
+          <p>项目只在这里创建；普通日程和今日任务不会自动成为项目。</p>
         </div>
         <button
           className="button button--primary"
@@ -1407,8 +1425,19 @@ function ProjectsView({
         </button>
       </section>
       <div className="project-overview">
-        {projects.map((project) => (
-          <article className="panel project-card" key={project.id}>
+        {projects.length ? projects.map((project) => {
+          const subgoals = tasks.filter(
+            (task) => task.projectId === project.id,
+          );
+          const completed = subgoals.filter(
+            (task) => task.status === "done",
+          ).length;
+          return (
+          <article
+            className="panel project-card"
+            key={project.id}
+            style={{ "--project-color": project.color } as CSSProperties}
+          >
             <div className="project-card-head">
               <span className="project-code">
                 P-{project.id.slice(-2).toUpperCase()}
@@ -1424,130 +1453,81 @@ function ProjectsView({
             </div>
             <h3>{project.title}</h3>
             <p>{project.description}</p>
-            <div className="progress-track">
-              <span
-                style={{
-                  width: `${project.progress}%`,
-                  background: project.color,
-                }}
-              />
+            <div className="project-subgoal-heading">
+              <div>
+                <span>子目标</span>
+                <strong>
+                  {completed}/{subgoals.length} 已完成
+                </strong>
+              </div>
+              <button
+                className="text-button"
+                type="button"
+                onClick={() => onCreateSubgoal(project.id)}
+              >
+                ＋ 添加子目标
+              </button>
             </div>
-            <div className="project-meta">
-              <span>{project.progress}%</span>
+            <div className="project-subgoal-list">
+              {subgoals.length ? (
+                subgoals.map((task) => (
+                  <label className="project-subgoal-row" key={task.id}>
+                    <input
+                      type="checkbox"
+                      checked={task.status === "done"}
+                      onChange={() =>
+                        onUpdate(
+                          "task",
+                          task.id,
+                          {
+                            status: task.status === "done" ? "todo" : "done",
+                          },
+                          task.status === "done"
+                            ? "子目标已重新打开"
+                            : "子目标已完成",
+                        )
+                      }
+                    />
+                    <span className={task.status === "done" ? "is-done" : ""}>
+                      {task.title}
+                    </span>
+                    {task.dueDate ? <time>{formatShortDate(task.dueDate)}</time> : null}
+                  </label>
+                ))
+              ) : (
+                <div className="project-subgoal-empty">
+                  <span aria-hidden="true">○</span>
+                  <p>还没有子目标。先拆出第一个可验证的结果。</p>
+                </div>
+              )}
+            </div>
+            <footer className="project-card-footer">
               <span>
-                {
-                  tasks.filter(
-                    (task) =>
-                      task.projectId === project.id && task.status === "done",
-                  ).length
-                }{" "}
-                / {tasks.filter((task) => task.projectId === project.id).length}{" "}
-                任务
+                {project.deadline
+                  ? `截止 ${formatShortDate(project.deadline)}`
+                  : "未设置截止日期"}
               </span>
-            </div>
-            <p className="next-action">
-              <span>下一步</span>
-              {project.nextAction || "确定下一步行动"}
-            </p>
-            <div className="stepper-actions">
               <button
+                className="button button--outline"
                 type="button"
-                onClick={() =>
-                  onUpdate(
-                    "project",
-                    project.id,
-                    { progress: Math.max(0, project.progress - 10) },
-                    "项目进度已更新",
-                  )
-                }
+                onClick={() => onCreateSubgoal(project.id)}
               >
-                −10%
+                创建子目标
               </button>
-              <button
-                type="button"
-                onClick={() =>
-                  onUpdate(
-                    "project",
-                    project.id,
-                    { progress: Math.min(100, project.progress + 10) },
-                    "项目进度已更新",
-                  )
-                }
-              >
-                ＋10%
-              </button>
-            </div>
+            </footer>
           </article>
-        ))}
+          );
+        }) : (
+          <section className="panel project-empty-state">
+            <EmptyState
+              title="还没有项目"
+              description="项目用于需要多个阶段或多个交付结果的大型工程。"
+              action="创建第一个项目"
+              onAction={onCreate}
+            />
+          </section>
+        )}
       </div>
-      <section className="kanban" aria-label="项目任务看板">
-        {statuses.map((status) => (
-          <div className="kanban-column" key={status.key}>
-            <div className="kanban-heading">
-              <h3>{status.label}</h3>
-              <span>
-                {tasks.filter((task) => task.status === status.key).length}
-              </span>
-            </div>
-            {tasks
-              .filter((task) => task.status === status.key)
-              .map((task) => (
-                <article className="kanban-card" key={task.id}>
-                  <span className={`priority priority--${task.priority}`}>
-                    {task.priority === "high" ? "高优先" : "任务"}
-                  </span>
-                  <h4>{task.title}</h4>
-                  <p>
-                    {task.notes ||
-                      projects.find((project) => project.id === task.projectId)
-                        ?.title ||
-                      "未分配项目"}
-                  </p>
-                  <div className="kanban-actions">
-                    {status.key !== "todo" ? (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          onUpdate(
-                            "task",
-                            task.id,
-                            {
-                              status: status.key === "done" ? "doing" : "todo",
-                            },
-                            "任务状态已更新",
-                          )
-                        }
-                      >
-                        ←
-                      </button>
-                    ) : (
-                      <span />
-                    )}
-                    {status.key !== "done" ? (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          onUpdate(
-                            "task",
-                            task.id,
-                            {
-                              status: status.key === "todo" ? "doing" : "done",
-                            },
-                            "任务状态已更新",
-                          )
-                        }
-                      >
-                        →
-                      </button>
-                    ) : (
-                      <span />
-                    )}
-                  </div>
-                </article>
-              ))}
-          </div>
-        ))}
-      </section>
     </div>
   );
 }
@@ -1890,6 +1870,9 @@ function ReviewView({ snapshot }: { snapshot: Snapshot }) {
   const resolved = snapshot.ideas.filter(
     (idea) => idea.status === "resolved",
   ).length;
+  const nextProjectGoal = snapshot.tasks.find(
+    (task) => task.projectId && task.status !== "done",
+  );
   return (
     <div className="page-stack page-enter">
       <section className="page-intro">
@@ -1967,7 +1950,7 @@ function ReviewView({ snapshot }: { snapshot: Snapshot }) {
           <p className="eyebrow">NEXT</p>
           <h3>最重要的下一步</h3>
           <p>
-            {snapshot.projects[0]?.nextAction || "为最重要的项目确定下一步。"}
+            {nextProjectGoal?.title || "为最重要的项目创建一个子目标。"}
           </p>
         </article>
       </section>
@@ -2205,7 +2188,8 @@ function EditorDialog({
   const titleRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   useDialogFocus(dialogRef, titleRef, onClose);
-  const label = entityLabel(entity);
+  const label =
+    entity === "task" && draft.projectId ? "子目标" : entityLabel(entity);
   return (
     <div
       className="modal-backdrop"
@@ -2302,22 +2286,13 @@ function EditorDialog({
             </>
           ) : null}
           {entity === "project" ? (
-            <div className="field-row">
-              <TypedField
-                id="project-progress"
-                label="当前进度"
-                hint="0–100"
-                value={draft.progress ?? "0"}
-                onChange={(value) => setDraft({ ...draft, progress: value })}
-              />
-              <TypedField
-                id="project-deadline"
-                label="截止日期"
-                hint="YYYY-MM-DD"
-                value={draft.deadline ?? ""}
-                onChange={(value) => setDraft({ ...draft, deadline: value })}
-              />
-            </div>
+            <TypedField
+              id="project-deadline"
+              label="截止日期"
+              hint="YYYY-MM-DD，可选"
+              value={draft.deadline ?? ""}
+              onChange={(value) => setDraft({ ...draft, deadline: value })}
+            />
           ) : null}
           {entity === "domain" ? (
             <div className="field-group">
@@ -2378,27 +2353,20 @@ function EditorDialog({
           ) : null}
           {entity === "task" ? (
             <>
-              <div className="field-group">
-                <label htmlFor="task-project">关联项目</label>
-                <select
-                  id="task-project"
-                  value={draft.projectId ?? ""}
-                  onChange={(event) =>
-                    setDraft({ ...draft, projectId: event.target.value })
-                  }
-                >
-                  <option value="">暂不关联</option>
-                  {snapshot?.projects.map((project) => (
-                    <option key={project.id} value={project.id}>
-                      {project.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {draft.projectId ? (
+                <div className="editor-context" role="status">
+                  <span>所属项目</span>
+                  <strong>
+                    {snapshot?.projects.find(
+                      (project) => project.id === draft.projectId,
+                    )?.title ?? "当前项目"}
+                  </strong>
+                </div>
+              ) : null}
               <TypedField
                 id="task-date"
-                label="计划日期"
-                hint="YYYY-MM-DD"
+                label={draft.projectId ? "目标日期" : "计划日期"}
+                hint="YYYY-MM-DD，可选"
                 value={draft.dueDate ?? ""}
                 onChange={(value) => setDraft({ ...draft, dueDate: value })}
               />
@@ -2410,6 +2378,8 @@ function EditorDialog({
                 ? "当前理解"
                 : entity === "project"
                   ? "项目说明"
+                  : entity === "task" && draft.projectId
+                    ? "子目标说明"
                   : "笔记"}
             </label>
             <textarea
@@ -2430,18 +2400,16 @@ function EditorDialog({
               placeholder="补充必要的上下文，不必一次写完。"
             />
           </div>
-          {entity === "project" || entity === "domain" ? (
+          {entity === "domain" ? (
             <div className="field-group">
               <label htmlFor="editor-next">下一步</label>
               <input
                 id="editor-next"
-                value={draft.nextAction ?? draft.nextStep ?? ""}
+                value={draft.nextStep ?? ""}
                 onChange={(event) =>
                   setDraft({
                     ...draft,
-                    ...(entity === "project"
-                      ? { nextAction: event.target.value }
-                      : { nextStep: event.target.value }),
+                    nextStep: event.target.value,
                   })
                 }
                 placeholder="写下一个具体行动…"
@@ -2816,6 +2784,10 @@ function formatFullDate(date: Date) {
     day: "numeric",
     weekday: "long",
   }).format(date);
+}
+function formatShortDate(value: string) {
+  const [, month = "", day = ""] = value.split("-");
+  return month && day ? `${Number(month)}月${Number(day)}日` : value;
 }
 function formatTime(value: string) {
   return new Intl.DateTimeFormat("zh-CN", {

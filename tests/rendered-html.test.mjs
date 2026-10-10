@@ -81,3 +81,25 @@ test("calendar grids open the shared event editor with time defaults", async () 
   assert.match(styles, /\.week-day-create-layer:focus-visible/);
   assert.match(styles, /\.week-calendar-body \{[^}]*height: 1024px/);
 });
+
+test("projects own checkable subgoals while calendar events stay independent", async () => {
+  const [client, api, google, migration] = await Promise.all([
+    readFile(new URL("../app/workspace/WorkspaceApp.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/workspace/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/lib/google-calendar.ts", import.meta.url), "utf8"),
+    readFile(
+      new URL(
+        "../drizzle/0002_detach_calendar_events_from_projects.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  ]);
+  assert.match(client, /onCreateSubgoal=\{\(projectId\)/);
+  assert.match(client, /className="project-subgoal-row"/);
+  assert.match(client, /checked=\{task\.status === "done"\}/);
+  assert.doesNotMatch(client, /id="project-progress"|−10%|＋10%|id="task-project"/);
+  assert.match(api, /syncStatus: "pending", projectId: null/);
+  assert.match(google, /projectId: null/);
+  assert.match(migration, /UPDATE `events`[\s\S]*`project_id` = NULL/);
+});

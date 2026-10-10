@@ -15,6 +15,13 @@
       "when": 1791600195977,
       "tag": "0001_restore_today_task_dates",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1791602000000,
+      "tag": "0002_detach_calendar_events_from_projects",
+      "breakpoints": true
     }
   ]
 }

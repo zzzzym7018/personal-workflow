@@ -73,7 +73,7 @@ async function createEntity(entity: EntityName, data: JsonRecord) {
   const title = requiredText(data.title, "请填写标题。 ");
   switch (entity) {
     case "project": {
-      const row = { id, title, description: optionalText(data.description), status: "active", progress: clampNumber(data.progress, 0, 100, 0), color: optionalText(data.color) || "#3449A4", deadline: nullableText(data.deadline), nextAction: optionalText(data.nextAction), archivedAt: null, createdAt: now, updatedAt: now };
+      const row = { id, title, description: optionalText(data.description), status: "active", progress: 0, color: optionalText(data.color) || "#3449A4", deadline: nullableText(data.deadline), nextAction: "", archivedAt: null, createdAt: now, updatedAt: now };
       await db.insert(projects).values(row); return row;
     }
     case "task": {
@@ -92,7 +92,7 @@ async function createEntity(entity: EntityName, data: JsonRecord) {
       const startAt = requiredIso(data.startAt, "请填写有效的开始时间。 ");
       const endAt = requiredIso(data.endAt, "请填写有效的结束时间。 ");
       if (new Date(endAt) <= new Date(startAt)) throw new InputError("结束时间必须晚于开始时间。 ");
-      const row = { id, title, startAt, endAt, allDay: Boolean(data.allDay), notes: optionalText(data.notes ?? data.note), color: optionalText(data.color) || "#159AA9", source: "local", externalId: null, externalCalendarId: null, syncStatus: "pending", projectId: nullableText(data.projectId), archivedAt: null, createdAt: now, updatedAt: now };
+      const row = { id, title, startAt, endAt, allDay: Boolean(data.allDay), notes: optionalText(data.notes ?? data.note), color: optionalText(data.color) || "#159AA9", source: "local", externalId: null, externalCalendarId: null, syncStatus: "pending", projectId: null, archivedAt: null, createdAt: now, updatedAt: now };
       await db.insert(events).values(row); return row;
     }
     case "learningLog": {
@@ -108,7 +108,7 @@ async function updateEntity(entity: EntityName, id: string, data: JsonRecord) {
   const updatedAt = nowIso();
   switch (entity) {
     case "project": {
-      const patch = { ...(data.title !== undefined ? { title: requiredText(data.title, "请填写项目名称。") } : {}), ...(data.description !== undefined ? { description: optionalText(data.description) } : {}), ...(data.progress !== undefined ? { progress: clampNumber(data.progress, 0, 100, 0) } : {}), ...(data.nextAction !== undefined ? { nextAction: optionalText(data.nextAction) } : {}), ...(data.deadline !== undefined ? { deadline: nullableText(data.deadline) } : {}), updatedAt };
+      const patch = { ...(data.title !== undefined ? { title: requiredText(data.title, "请填写项目名称。") } : {}), ...(data.description !== undefined ? { description: optionalText(data.description) } : {}), ...(data.deadline !== undefined ? { deadline: nullableText(data.deadline) } : {}), updatedAt };
       await db.update(projects).set(patch).where(eq(projects.id, id)); return { id, ...patch };
     }
     case "task": {

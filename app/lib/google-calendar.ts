@@ -184,7 +184,7 @@ export async function syncGoogleCalendars(userEmail: string) {
         externalId: item.id,
         externalCalendarId: calendar.calendarId,
         syncStatus: "synced",
-        projectId: existing[0]?.projectId ?? null,
+        projectId: null,
         archivedAt: null,
         createdAt: existing[0]?.createdAt ?? now,
         updatedAt: item.updated ?? now,

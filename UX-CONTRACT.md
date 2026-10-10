@@ -68,6 +68,7 @@
 | Archive | 归档 | confirmation busy | stay in list | “已归档” + Undo when honest | dialog remains + retry | next item | PRODUCT.md |
 | Search | 全局搜索 | local, no network wait | same view | result count status | clear/reset | input/results | PRODUCT.md |
 | Google sync | 立即同步 | persistent sync status | same view | exact import/export count | status panel + retry | sync trigger | PRODUCT.md |
+| Project subgoal | 项目卡内“创建子目标”/勾选 | stable busy action | stay in project card | “子目标已创建/已完成” toast | keep editor or prior checked state + retry | changed subgoal | PRODUCT.md |
 | Cancel/back | 取消/返回 | none | originating context | none | unsaved dialog if needed | trigger | PRODUCT.md |
 
 ## Navigation and responsive behavior
@@ -75,7 +76,7 @@
 - Route document title policy: `{页面} — 知行台`；client view changes update the title。
 - Route error / 403 page behavior: keep product identity and offer sign-in/home path; do not disguise 403 as 404。
 - Sidebar/drawer/bottom-sheet transformation: persistent left sidebar ≥760px；mobile bottom navigation and full-width editor below。
-- Responsive table strategy: independent records stack as cards；kanban remains horizontal with overflow cue。
+- Responsive record strategy: project cards use two columns on wide screens and one column on narrow screens；subgoals stay inside their owning project card。
 - Calendar grid strategy: 周视图固定日期头与时间栏，08:00—24:00 由同一连续比例轴定位；窄屏由时间网格拥有横向和纵向滚动，不裁切日期或事件。
 - Focus restoration: modal/drawer returns focus to trigger; sticky controls use scroll-margin and safe-area padding。
 
