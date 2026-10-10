@@ -218,6 +218,24 @@ export async function syncGoogleCalendars(userEmail: string) {
   return { imported, exported, calendars: calendars.length };
 }
 
+export async function deleteGoogleCalendarEvent(
+  userEmail: string,
+  calendarId: string,
+  eventId: string,
+) {
+  const accessToken = await getValidAccessToken(userEmail);
+  const response = await fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
+    {
+      method: "DELETE",
+      headers: { authorization: `Bearer ${accessToken}` },
+    },
+  );
+  if (response.ok || response.status === 404 || response.status === 410) return;
+  if (response.status === 403) throw new Error("GOOGLE_EVENT_DELETE_FORBIDDEN");
+  throw new Error("GOOGLE_EVENT_DELETE_FAILED");
+}
+
 export async function setCalendarSelected(userEmail: string, calendarId: string, selected: boolean) {
   await ensureWorkspaceSchema();
   await getDb().update(googleCalendars).set({ selected, updatedAt: nowIso() }).where(and(eq(googleCalendars.userEmail, userEmail), eq(googleCalendars.calendarId, calendarId)));

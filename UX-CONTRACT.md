@@ -68,6 +68,7 @@
 | Edit schedule | Time Rail 日程块 | prefilled event editor | stay on Today | “日程已更新” toast | keep values + inline error | edited time block | PRODUCT.md |
 | Edit project | 项目卡片非操作区域 | prefilled project editor | stay on Projects | “项目已更新” toast | keep values + inline error | edited project card | PRODUCT.md |
 | Archive | 归档 | confirmation busy | stay in list | “已归档” + Undo when honest | dialog remains + retry | next item | PRODUCT.md |
+| Permanent delete | 删除 | danger confirmation + stable busy action | stay in owning view | “已永久删除” toast | dialog remains + inline retry error | owning view heading | PRODUCT.md |
 | Search | 全局搜索 | local, no network wait | same view | result count status | clear/reset | input/results | PRODUCT.md |
 | Google sync | 立即同步 | persistent sync status | same view | exact import/export count | status panel + retry | sync trigger | PRODUCT.md |
 | Project subgoal | 项目卡内“创建子目标”/勾选 | stable busy action | stay in project card | “子目标已创建/已完成” toast | keep editor or prior checked state + retry | changed subgoal | PRODUCT.md |
@@ -85,7 +86,7 @@
 ## Overlays and feedback
 
 - Dialog primitive: application-owned modal with inert background, focus containment, Escape and restoration。
-- Destructive confirmation levels: archive uses warning; no hard delete in v1。
+- Destructive confirmation levels: archive uses warning；permanent delete uses danger and names the object, affected child records, external-calendar consequence and irreversibility。
 - Toast placement/duration/deduplication: top-right, 4.5s, identical messages deduplicated within 2s, maximum 3。
 - Unsaved changes: create form asks before discard; routine existing-record fields use explicit save。
 - Layer contract: dropdown 200, popover 300, header 400, backdrop 500, dialog 600, drawer 700, command 800, toast 900。

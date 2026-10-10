@@ -123,6 +123,12 @@ type Toast = {
   tone: "success" | "warning" | "error" | "info";
 };
 type EditorDraft = Record<string, string>;
+type DeleteTarget = {
+  entity: "event" | "task" | "project";
+  id: string;
+  title: string;
+  description: string;
+};
 
 const navigation: Array<{ key: ViewKey; label: string; mark: string }> = [
   { key: "today", label: "今日", mark: "今" },
@@ -170,6 +176,8 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
     id: string;
     title: string;
   } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const [deleteError, setDeleteError] = useState("");
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [googleStatus, setGoogleStatus] = useState<GoogleStatus | null>(null);
   const [syncing, setSyncing] = useState(false);
@@ -447,6 +455,49 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
     }
   }
 
+  function requestDelete(target: DeleteTarget) {
+    setDeleteError("");
+    setDeleteTarget(target);
+  }
+
+  async function deleteItem() {
+    if (!deleteTarget) return;
+    setDeleteError("");
+    setSaving(true);
+    try {
+      const response = await fetch("/api/workspace", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          entity: deleteTarget.entity,
+          id: deleteTarget.id,
+          action: "delete",
+        }),
+      });
+      const result = (await response.json()) as { error?: string };
+      if (!response.ok) throw new Error(result.error || "删除失败，请重试。 ");
+      await loadWorkspace();
+      const deletedEditorTarget = editorTargetId === deleteTarget.id;
+      setDeleteTarget(null);
+      if (deletedEditorTarget) {
+        editorReturnFocusIdRef.current = null;
+        setEditor(null);
+        setEditorTargetId(null);
+      }
+      notify(`${entityLabel(deleteTarget.entity)}已永久删除`, "warning");
+      window.setTimeout(
+        () => document.querySelector<HTMLElement>("#workspace-main")?.focus(),
+        0,
+      );
+    } catch (reason) {
+      setDeleteError(
+        reason instanceof Error ? reason.message : "删除失败，请重试。 ",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function syncGoogle() {
     setSyncing(true);
     try {
@@ -609,17 +660,39 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
                   }
                   onOpenEditor={openEditor}
                   onEditEvent={openEventEditor}
+                  onDeleteTask={(task) =>
+                    requestDelete({
+                      entity: "task",
+                      id: task.id,
+                      title: task.title,
+                      description: task.projectId
+                        ? "该子目标将从所属项目中永久删除，且无法恢复。"
+                        : "该任务将被永久删除，且无法恢复。",
+                    })
+                  }
                 />
               ) : null}
               {activeView === "calendar" ? (
                 <CalendarView
                   events={snapshot.events}
                   onCreate={(defaults) => openEditor("event", defaults)}
+                  onEdit={openEventEditor}
                   onArchive={(item) =>
                     setArchiveTarget({
                       entity: "event",
                       id: item.id,
                       title: item.title,
+                    })
+                  }
+                  onDelete={(item) =>
+                    requestDelete({
+                      entity: "event",
+                      id: item.id,
+                      title: item.title,
+                      description:
+                        item.externalCalendarId && item.externalId
+                          ? "该日程将同时从 Google Calendar 和知行台永久删除，且无法恢复。"
+                          : "该日程将从知行台永久删除，且无法恢复。",
                     })
                   }
                   googleStatus={googleStatus}
@@ -642,6 +715,25 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
                       entity: "project",
                       id: item.id,
                       title: item.title,
+                    })
+                  }
+                  onDelete={(item) => {
+                    const childCount = snapshot.tasks.filter(
+                      (task) => task.projectId === item.id,
+                    ).length;
+                    requestDelete({
+                      entity: "project",
+                      id: item.id,
+                      title: item.title,
+                      description: `该项目及其 ${childCount} 个子目标将被永久删除；关联的 Ideas 会保留并取消项目关联。此操作无法恢复。`,
+                    });
+                  }}
+                  onDeleteTask={(task) =>
+                    requestDelete({
+                      entity: "task",
+                      id: task.id,
+                      title: task.title,
+                      description: "该子目标将从所属项目中永久删除，且无法恢复。",
                     })
                   }
                 />
@@ -714,6 +806,7 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
           error={editorError}
           saving={saving}
           editing={Boolean(editorTargetId)}
+          suspended={Boolean(deleteTarget)}
           snapshot={snapshot}
           onClose={() => {
             const returnFocusId = editorReturnFocusIdRef.current;
@@ -729,6 +822,43 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
             );
           }}
           onSubmit={createItem}
+          onDelete={
+            editorTargetId && (editor === "event" || editor === "project")
+              ? () => {
+                  if (editor === "event") {
+                    const item = snapshot?.events.find(
+                      (event) => event.id === editorTargetId,
+                    );
+                    if (item)
+                      requestDelete({
+                        entity: "event",
+                        id: item.id,
+                        title: item.title,
+                        description:
+                          item.externalCalendarId && item.externalId
+                            ? "该日程将同时从 Google Calendar 和知行台永久删除，且无法恢复。"
+                            : "该日程将从知行台永久删除，且无法恢复。",
+                      });
+                  } else {
+                    const item = snapshot?.projects.find(
+                      (project) => project.id === editorTargetId,
+                    );
+                    if (item) {
+                      const childCount =
+                        snapshot?.tasks.filter(
+                          (task) => task.projectId === item.id,
+                        ).length ?? 0;
+                      requestDelete({
+                        entity: "project",
+                        id: item.id,
+                        title: item.title,
+                        description: `该项目及其 ${childCount} 个子目标将被永久删除；关联的 Ideas 会保留并取消项目关联。此操作无法恢复。`,
+                      });
+                    }
+                  }
+                }
+              : undefined
+          }
         />
       ) : null}
       {searchOpen ? (
@@ -751,6 +881,23 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
           saving={saving}
           onCancel={() => setArchiveTarget(null)}
           onConfirm={archiveItem}
+        />
+      ) : null}
+      {deleteTarget ? (
+        <ConfirmDialog
+          tone="danger"
+          mark="删"
+          title={`永久删除「${deleteTarget.title}」？`}
+          description={deleteTarget.description}
+          confirmLabel="永久删除"
+          savingLabel="正在删除…"
+          error={deleteError}
+          saving={saving}
+          onCancel={() => {
+            setDeleteError("");
+            setDeleteTarget(null);
+          }}
+          onConfirm={deleteItem}
         />
       ) : null}
       <div className="toast-viewport" aria-live="polite" aria-atomic="false">
@@ -787,6 +934,7 @@ function TodayView({
   onToggleTask,
   onOpenEditor,
   onEditEvent,
+  onDeleteTask,
 }: {
   snapshot: Snapshot;
   todayEvents: CalendarEvent[];
@@ -795,6 +943,7 @@ function TodayView({
   onToggleTask: (task: Task) => void;
   onOpenEditor: (entity: EntityName, defaults?: EditorDraft) => void;
   onEditEvent: (event: CalendarEvent) => void;
+  onDeleteTask: (task: Task) => void;
 }) {
   const now = useCurrentTime();
   const todayTasks = snapshot.tasks.filter(
@@ -892,9 +1041,10 @@ function TodayView({
           >
             {todayTasks.length ? (
               todayTasks.map((task) => (
-                <label key={task.id} className="task-row">
+                <div key={task.id} className="task-row">
                   <input
                     type="checkbox"
+                    aria-label={`${task.status === "done" ? "重新打开" : "完成"} ${task.title}`}
                     checked={task.status === "done"}
                     onChange={() => onToggleTask(task)}
                   />
@@ -904,7 +1054,14 @@ function TodayView({
                   <span className="tag">
                     {task.projectId ? "子目标" : "任务"}
                   </span>
-                </label>
+                  <button
+                    className="row-action row-action--danger"
+                    type="button"
+                    onClick={() => onDeleteTask(task)}
+                  >
+                    删除
+                  </button>
+                </div>
               ))
             ) : (
               <EmptyState
@@ -1168,14 +1325,18 @@ function Timeline({
 function CalendarView({
   events,
   onCreate,
+  onEdit,
   onArchive,
+  onDelete,
   googleStatus,
   onSync,
   syncing,
 }: {
   events: CalendarEvent[];
   onCreate: (defaults?: EditorDraft) => void;
+  onEdit: (event: CalendarEvent) => void;
   onArchive: (event: CalendarEvent) => void;
+  onDelete: (event: CalendarEvent) => void;
   googleStatus: GoogleStatus | null;
   onSync: () => void;
   syncing: boolean;
@@ -1225,10 +1386,15 @@ function CalendarView({
           days={days}
           events={events}
           onCreate={onCreate}
-          onArchive={onArchive}
+          onEdit={onEdit}
         />
       ) : (
-        <AgendaList events={events} onArchive={onArchive} />
+        <AgendaList
+          events={events}
+          onEdit={onEdit}
+          onArchive={onArchive}
+          onDelete={onDelete}
+        />
       )}
     </div>
   );
@@ -1238,12 +1404,12 @@ function WeekCalendar({
   days,
   events,
   onCreate,
-  onArchive,
+  onEdit,
 }: {
   days: ReturnType<typeof weekDays>;
   events: CalendarEvent[];
   onCreate: (defaults?: EditorDraft) => void;
-  onArchive: (event: CalendarEvent) => void;
+  onEdit: (event: CalendarEvent) => void;
 }) {
   const hours = Array.from({ length: 17 }, (_, index) => index + 8);
   const now = useCurrentTime();
@@ -1385,8 +1551,8 @@ function WeekCalendar({
                               "--event-lanes": laneCount,
                             } as CSSProperties
                           }
-                          aria-label={`${event.title}，${formatTime(event.startAt)} 至 ${formatTime(event.endAt)}，点击归档`}
-                          onClick={() => onArchive(event)}
+                          aria-label={`编辑日程 ${event.title}，${formatTime(event.startAt)} 至 ${formatTime(event.endAt)}`}
+                          onClick={() => onEdit(event)}
                         >
                           <time>
                             {formatTime(event.startAt)}—{formatTime(event.endAt)}
@@ -1413,10 +1579,14 @@ function WeekCalendar({
 
 function AgendaList({
   events,
+  onEdit,
   onArchive,
+  onDelete,
 }: {
   events: CalendarEvent[];
+  onEdit: (event: CalendarEvent) => void;
   onArchive: (event: CalendarEvent) => void;
+  onDelete: (event: CalendarEvent) => void;
 }) {
   return (
     <section className="panel agenda-panel">
@@ -1436,20 +1606,32 @@ function AgendaList({
                 className="agenda-dot"
                 style={{ background: event.color }}
               />
-              <div>
+              <button
+                className="agenda-open"
+                type="button"
+                onClick={() => onEdit(event)}
+              >
                 <strong>{event.title}</strong>
                 <span>
                   {event.source === "google" ? "Google Calendar" : "站内日程"}
                 </span>
-              </div>
-              <button
-                className="icon-button"
-                type="button"
-                aria-label={`归档日程 ${event.title}`}
-                onClick={() => onArchive(event)}
-              >
-                ···
               </button>
+              <div className="row-actions">
+                <button
+                  className="row-action"
+                  type="button"
+                  onClick={() => onArchive(event)}
+                >
+                  归档
+                </button>
+                <button
+                  className="row-action row-action--danger"
+                  type="button"
+                  onClick={() => onDelete(event)}
+                >
+                  删除
+                </button>
+              </div>
             </article>
           ))}
         </div>
@@ -1471,6 +1653,8 @@ function ProjectsView({
   onCreateSubgoal,
   onUpdate,
   onArchive,
+  onDelete,
+  onDeleteTask,
 }: {
   projects: Project[];
   tasks: Task[];
@@ -1484,6 +1668,8 @@ function ProjectsView({
     message?: string,
   ) => void;
   onArchive: (project: Project) => void;
+  onDelete: (project: Project) => void;
+  onDeleteTask: (task: Task) => void;
 }) {
   return (
     <div className="page-stack page-enter">
@@ -1526,14 +1712,22 @@ function ProjectsView({
               <span className="project-code">
                 P-{project.id.slice(-2).toUpperCase()}
               </span>
-              <button
-                className="icon-button"
-                type="button"
-                aria-label={`归档项目 ${project.title}`}
-                onClick={() => onArchive(project)}
-              >
-                ···
-              </button>
+              <div className="row-actions">
+                <button
+                  className="row-action"
+                  type="button"
+                  onClick={() => onArchive(project)}
+                >
+                  归档
+                </button>
+                <button
+                  className="row-action row-action--danger"
+                  type="button"
+                  onClick={() => onDelete(project)}
+                >
+                  删除
+                </button>
+              </div>
             </div>
             <h3>{project.title}</h3>
             <p>{project.description}</p>
@@ -1555,9 +1749,10 @@ function ProjectsView({
             <div className="project-subgoal-list">
               {subgoals.length ? (
                 subgoals.map((task) => (
-                  <label className="project-subgoal-row" key={task.id}>
+                  <div className="project-subgoal-row" key={task.id}>
                     <input
                       type="checkbox"
+                      aria-label={`${task.status === "done" ? "重新打开" : "完成"} ${task.title}`}
                       checked={task.status === "done"}
                       onChange={() =>
                         onUpdate(
@@ -1576,7 +1771,14 @@ function ProjectsView({
                       {task.title}
                     </span>
                     {task.dueDate ? <time>{formatShortDate(task.dueDate)}</time> : null}
-                  </label>
+                    <button
+                      className="row-action row-action--danger"
+                      type="button"
+                      onClick={() => onDeleteTask(task)}
+                    >
+                      删除
+                    </button>
+                  </div>
                 ))
               ) : (
                 <div className="project-subgoal-empty">
@@ -2257,9 +2459,11 @@ function EditorDialog({
   error,
   saving,
   editing,
+  suspended,
   snapshot,
   onClose,
   onSubmit,
+  onDelete,
 }: {
   entity: EntityName;
   draft: EditorDraft;
@@ -2267,18 +2471,22 @@ function EditorDialog({
   error: string;
   saving: boolean;
   editing: boolean;
+  suspended: boolean;
   snapshot: Snapshot | null;
   onClose: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onDelete?: () => void;
 }) {
   const titleRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
-  useDialogFocus(dialogRef, titleRef, onClose);
+  useDialogFocus(dialogRef, titleRef, onClose, !suspended);
   const label =
     entity === "task" && draft.projectId ? "子目标" : entityLabel(entity);
   return (
     <div
       className="modal-backdrop"
+      aria-hidden={suspended || undefined}
+      inert={suspended || undefined}
       onMouseDown={(event) => {
         if (event.currentTarget === event.target && !saving) onClose();
       }}
@@ -2512,6 +2720,16 @@ function EditorDialog({
             <div className="form-error form-error--empty" aria-hidden="true" />
           )}
           <footer>
+            {onDelete ? (
+              <button
+                className="button button--ghost-danger editor-delete-action"
+                type="button"
+                onClick={onDelete}
+                disabled={saving}
+              >
+                永久删除
+              </button>
+            ) : null}
             <button
               className="button button--outline"
               type="button"
@@ -2674,16 +2892,24 @@ function SearchDialog({
 }
 
 function ConfirmDialog({
+  tone = "warning",
+  mark = "归",
   title,
   description,
   confirmLabel,
+  savingLabel = "正在归档…",
+  error = "",
   saving,
   onCancel,
   onConfirm,
 }: {
+  tone?: "warning" | "danger";
+  mark?: string;
   title: string;
   description: string;
   confirmLabel: string;
+  savingLabel?: string;
+  error?: string;
   saving: boolean;
   onCancel: () => void;
   onConfirm: () => void;
@@ -2701,11 +2927,16 @@ function ConfirmDialog({
         aria-labelledby="confirm-title"
         aria-describedby="confirm-description"
       >
-        <span className="confirm-mark" aria-hidden="true">
-          归
+        <span className={`confirm-mark confirm-mark--${tone}`} aria-hidden="true">
+          {mark}
         </span>
         <h2 id="confirm-title">{title}</h2>
         <p id="confirm-description">{description}</p>
+        {error ? (
+          <div className="confirm-error" role="alert">
+            {error}
+          </div>
+        ) : null}
         <div>
           <button
             ref={cancelRef}
@@ -2717,12 +2948,12 @@ function ConfirmDialog({
             取消
           </button>
           <button
-            className="button button--warning"
+            className={`button button--${tone}`}
             type="button"
             onClick={onConfirm}
             disabled={saving}
           >
-            {saving ? "正在归档…" : confirmLabel}
+            {saving ? savingLabel : confirmLabel}
           </button>
         </div>
       </div>
@@ -2734,6 +2965,7 @@ function useDialogFocus(
   dialogRef: React.RefObject<HTMLDivElement | null>,
   initialRef: React.RefObject<HTMLElement | null>,
   onClose: () => void,
+  active = true,
 ) {
   const onCloseRef = useRef(onClose);
 
@@ -2742,6 +2974,7 @@ function useDialogFocus(
   }, [onClose]);
 
   useEffect(() => {
+    if (!active) return;
     const prior = document.activeElement as HTMLElement | null;
     const backgrounds = Array.from(
       document.querySelectorAll<HTMLElement>(
@@ -2779,7 +3012,7 @@ function useDialogFocus(
       backgrounds.forEach((background) => background.removeAttribute("inert"));
       prior?.focus();
     };
-  }, [dialogRef, initialRef]);
+  }, [active, dialogRef, initialRef]);
 }
 
 function TypedField({

@@ -37,7 +37,7 @@ test("keeps dialog focus stable while users type with an IME", async () => {
   );
   assert.match(client, /const onCloseRef = useRef\(onClose\)/);
   assert.match(client, /onCloseRef\.current\(\)/);
-  assert.match(client, /\[dialogRef, initialRef\]/);
+  assert.match(client, /\[active, dialogRef, initialRef\]/);
   assert.doesNotMatch(client, /\[dialogRef, initialRef, onClose\]/);
 });
 
@@ -132,4 +132,27 @@ test("projects own checkable subgoals while calendar events stay independent", a
   assert.match(api, /syncStatus: "pending", projectId: null/);
   assert.match(google, /projectId: null/);
   assert.match(migration, /UPDATE `events`[\s\S]*`project_id` = NULL/);
+});
+
+test("schedules, goals, and projects expose confirmed permanent deletion", async () => {
+  const [client, api, google, styles] = await Promise.all([
+    readFile(new URL("../app/workspace/WorkspaceApp.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/workspace/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/lib/google-calendar.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+  assert.match(client, /action: "delete"/);
+  assert.match(client, /永久删除「\$\{deleteTarget\.title\}」/);
+  assert.match(client, /className="row-action row-action--danger"/);
+  assert.match(client, /该项目及其 \$\{childCount\} 个子目标将被永久删除/);
+  assert.match(client, /同时从 Google Calendar 和知行台永久删除/);
+  assert.match(client, /error=\{deleteError\}/);
+  assert.doesNotMatch(client, /window\.confirm|confirm\(/);
+  assert.match(api, /body\.action === "delete"/);
+  assert.match(api, /db\.delete\(tasks\)\.where\(eq\(tasks\.projectId, body\.id\)\)/);
+  assert.match(api, /db\.update\(ideas\)\.set\(\{ projectId: null, updatedAt \}\)/);
+  assert.match(api, /deleteGoogleCalendarEvent/);
+  assert.match(google, /method: "DELETE"/);
+  assert.match(styles, /\.button--danger/);
+  assert.match(styles, /\.row-action--danger/);
 });

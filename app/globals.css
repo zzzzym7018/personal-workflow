@@ -75,6 +75,8 @@ kbd { padding: 2px 7px; border: 1px solid var(--line); border-bottom-width: 2px;
 .button--outline { border-color: var(--line); background: var(--surface); }
 .button--outline:hover:not(:disabled) { border-color: #b9c5ce; }
 .button--warning { color: white; background: var(--warning); }
+.button--danger { color: white; background: var(--danger); border-color: var(--danger); }
+.button--danger:hover:not(:disabled) { background: #963d3d; }
 .button--ghost-danger { color: var(--danger); background: transparent; }
 .button--ghost-danger:hover:not(:disabled) { background: #fbefef; box-shadow: none; }
 .button--large { min-height: 48px; padding-inline: 21px; }
@@ -83,6 +85,11 @@ kbd { padding: 2px 7px; border: 1px solid var(--line); border-bottom-width: 2px;
 .icon-button:hover { background: var(--surface-muted); }
 .text-button { padding: 4px 0; font-size: 13px; }
 .text-button:hover { color: var(--primary-deep); text-decoration: underline; text-underline-offset: 3px; }
+.row-actions { display: flex; align-items: center; gap: 4px; }
+.row-action { min-height: 30px; padding: 4px 7px; border: 0; border-radius: 7px; color: var(--ink-muted); background: transparent; font-size: 11px; font-weight: 700; }
+.row-action:hover { color: var(--ink); background: var(--surface-muted); }
+.row-action--danger { color: var(--danger); }
+.row-action--danger:hover { color: #8f3535; background: #fbefef; }
 
 .preview-banner, .page-alert { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 8px clamp(22px, 3vw, 46px); font-size: 12px; }
 .preview-banner { color: #25655f; background: #e3f2ef; }
@@ -112,7 +119,7 @@ kbd { padding: 2px 7px; border: 1px solid var(--line); border-bottom-width: 2px;
 .context-column .panel-heading h2 { font-size: 17px; }
 .scroll-region { overscroll-behavior: contain; scrollbar-gutter: stable; }
 .task-list { display: grid; max-height: 286px; gap: 5px; margin-top: 12px; padding-right: 6px; overflow-y: auto; }
-.task-row { display: grid; grid-template-columns: 20px 1fr auto; align-items: center; gap: 9px; min-height: 38px; padding: 5px 3px; border-bottom: 1px solid #edf1f3; }
+.task-row { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto auto; align-items: center; gap: 7px; min-height: 42px; padding: 5px 3px; border-bottom: 1px solid #edf1f3; }
 .task-row:last-child { border-bottom: 0; }
 .task-row input { accent-color: var(--primary); width: 16px; height: 16px; }
 .task-row .is-done { color: #95a0ad; text-decoration: line-through; }
@@ -213,8 +220,11 @@ kbd { padding: 2px 7px; border: 1px solid var(--line); border-bottom-width: 2px;
 .agenda-list { display: grid; margin-top: 12px; }
 .agenda-row { display: grid; grid-template-columns: 58px 12px 1fr auto; align-items: center; gap: 12px; min-height: 56px; border-bottom: 1px solid #edf1f3; }
 .agenda-row time { font-family: var(--font-mono); font-size: 11px; }
-.agenda-row div { display: grid; }
+.agenda-open { display: grid; min-width: 0; padding: 5px 0; border: 0; background: transparent; text-align: left; }
+.agenda-open:hover strong { color: var(--primary); }
+.agenda-open strong, .agenda-open span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .agenda-row small { color: var(--ink-muted); }
+.agenda-row .row-actions { display: flex; }
 .agenda-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--event-color); }
 
 .project-overview { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
@@ -235,7 +245,7 @@ kbd { padding: 2px 7px; border: 1px solid var(--line); border-bottom-width: 2px;
 .project-subgoal-heading span { color: var(--ink-muted); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; }
 .project-subgoal-heading strong { font-size: 13px; }
 .project-subgoal-list { display: grid; gap: 4px; margin-top: 10px; }
-.project-subgoal-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; min-height: 42px; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 9px; transition: background 160ms ease; }
+.project-subgoal-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto auto; min-height: 42px; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 9px; transition: background 160ms ease; }
 .project-subgoal-row:hover { background: var(--surface-muted); }
 .project-subgoal-row input { width: 17px; height: 17px; accent-color: var(--project-color); cursor: pointer; }
 .project-subgoal-row span { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
@@ -358,6 +368,7 @@ kbd { padding: 2px 7px; border: 1px solid var(--line); border-bottom-width: 2px;
 .editor-dialog h2, .confirm-dialog h2 { margin: 2px 0 0; font-family: var(--font-display); font-size: 24px; }
 .editor-dialog form { display: grid; gap: 15px; padding: 20px 22px 22px; }
 .editor-dialog footer { display: flex; justify-content: flex-end; gap: 9px; padding-top: 5px; }
+.editor-delete-action { margin-right: auto; }
 .field-group { display: grid; gap: 6px; }
 .field-group label { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; font-weight: 700; }
 .field-group label span { color: var(--ink-muted); font-family: var(--font-mono); font-size: 9px; font-weight: 400; }
@@ -373,7 +384,9 @@ kbd { padding: 2px 7px; border: 1px solid var(--line); border-bottom-width: 2px;
 .form-error--empty { visibility: hidden; }
 .confirm-dialog { max-width: 430px; padding: 27px; text-align: center; }
 .confirm-mark { display: grid; width: 48px; height: 48px; place-items: center; margin: 0 auto 13px; border-radius: 50%; color: #8b5815; background: #fff0d7; font-family: var(--font-display); font-size: 20px; }
+.confirm-mark--danger { color: #923f3f; background: #fbe8e8; }
 .confirm-dialog p { margin: 8px 0 22px; color: var(--ink-muted); }
+.confirm-error { margin: -10px 0 17px; padding: 8px 10px; border-radius: 8px; color: #923f3f; background: #faeeee; font-size: 12px; text-align: left; }
 .confirm-dialog > div:last-child { display: flex; justify-content: center; gap: 9px; }
 .command-dialog { max-width: 650px; }
 .command-input { display: grid; grid-template-columns: 24px 1fr auto auto; align-items: center; gap: 9px; min-height: 62px; padding: 0 17px; border-bottom: 1px solid var(--line); }

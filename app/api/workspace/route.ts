@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { domains, events, ideas, learningLogs, projects, tasks } from "../../../db/schema";
+import { deleteGoogleCalendarEvent } from "../../lib/google-calendar";
 import { accessErrorResponse, requireAllowedViewer } from "../../lib/server-auth";
 import { getWorkspaceSnapshot, nowIso, seedWorkspace } from "../../lib/workspace-db";
 
@@ -47,10 +48,52 @@ export async function PATCH(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    await requireAllowedViewer();
+    const viewer = await requireAllowedViewer();
     await seedWorkspace();
-    const body = (await request.json()) as { entity?: Exclude<EntityName, "learningLog">; id?: string };
-    if (!body.entity || !body.id) return Response.json({ error: "缺少归档对象。" }, { status: 400 });
+    const body = (await request.json()) as {
+      entity?: Exclude<EntityName, "learningLog">;
+      id?: string;
+      action?: "archive" | "delete";
+    };
+    if (!body.entity || !body.id) return Response.json({ error: "缺少操作对象。" }, { status: 400 });
+    if (body.action === "delete") {
+      const db = getDb();
+      const updatedAt = nowIso();
+      switch (body.entity) {
+        case "project":
+          await db.batch([
+            db.delete(tasks).where(eq(tasks.projectId, body.id)),
+            db.update(ideas).set({ projectId: null, updatedAt }).where(eq(ideas.projectId, body.id)),
+            db.update(events).set({ projectId: null, updatedAt }).where(eq(events.projectId, body.id)),
+            db.delete(projects).where(eq(projects.id, body.id)),
+          ]);
+          break;
+        case "task":
+          await db.delete(tasks).where(eq(tasks.id, body.id));
+          break;
+        case "event": {
+          const existing = await db.select().from(events).where(eq(events.id, body.id)).limit(1);
+          const item = existing[0];
+          if (!item) throw new InputError("这个日程已经不存在。 ");
+          if (!viewer.isPreview && item.externalCalendarId && item.externalId) {
+            try {
+              await deleteGoogleCalendarEvent(viewer.email, item.externalCalendarId, item.externalId);
+            } catch {
+              throw new InputError("未能从 Google Calendar 删除该日程，请检查日历权限后重试。 ");
+            }
+          }
+          await db.delete(events).where(eq(events.id, body.id));
+          break;
+        }
+        case "domain":
+          await db.delete(domains).where(eq(domains.id, body.id));
+          break;
+        case "idea":
+          await db.delete(ideas).where(eq(ideas.id, body.id));
+          break;
+      }
+      return Response.json({ deleted: true });
+    }
     const archivedAt = nowIso();
     const db = getDb();
     switch (body.entity) {
