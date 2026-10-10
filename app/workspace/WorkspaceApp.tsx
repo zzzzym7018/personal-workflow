@@ -342,6 +342,21 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
     });
   }
 
+  function openIdeaEditor(idea: Idea) {
+    editorReturnFocusIdRef.current = `idea-edit-${idea.id}`;
+    setEditor("idea");
+    setEditorTargetId(idea.id);
+    setEditorError("");
+    setDraft({
+      title: idea.title,
+      type: idea.type,
+      note: idea.note,
+      status: idea.status,
+      projectId: idea.projectId ?? "",
+      domainId: idea.domainId ?? "",
+    });
+  }
+
   async function createItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!editor) return;
@@ -754,6 +769,7 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
                   projects={snapshot.projects}
                   domains={snapshot.domains}
                   onCreate={() => openEditor("idea")}
+                  onEdit={openIdeaEditor}
                   onUpdate={updateItem}
                   onArchive={(item) =>
                     setArchiveTarget({
@@ -2037,6 +2053,7 @@ function IdeasView({
   projects,
   domains,
   onCreate,
+  onEdit,
   onUpdate,
   onArchive,
 }: {
@@ -2044,6 +2061,7 @@ function IdeasView({
   projects: Project[];
   domains: Domain[];
   onCreate: () => void;
+  onEdit: (idea: Idea) => void;
   onUpdate: (
     entity: EntityName,
     id: string,
@@ -2090,6 +2108,13 @@ function IdeasView({
       <div className="idea-grid">
         {filtered.map((idea) => (
           <article className="panel idea-card" key={idea.id}>
+            <button
+              id={`idea-edit-${idea.id}`}
+              className="idea-card-edit-target"
+              type="button"
+              aria-label={`编辑${idea.type === "question" ? "疑问" : "Idea"} ${idea.title}`}
+              onClick={() => onEdit(idea)}
+            />
             <div className="idea-card-head">
               <span className={`type-badge type-badge--${idea.type}`}>
                 {idea.type === "question" ? "疑问" : "Idea"}
@@ -2560,6 +2585,44 @@ function EditorDialog({
               >
                 疑问
               </button>
+            </div>
+          ) : null}
+          {entity === "idea" ? (
+            <div className="field-row field-row--two">
+              <div className="field-group">
+                <label htmlFor="idea-domain">关联领域</label>
+                <select
+                  id="idea-domain"
+                  value={draft.domainId ?? ""}
+                  onChange={(event) =>
+                    setDraft({ ...draft, domainId: event.target.value })
+                  }
+                >
+                  <option value="">未关联领域</option>
+                  {snapshot?.domains.map((domain) => (
+                    <option key={domain.id} value={domain.id}>
+                      {domain.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field-group">
+                <label htmlFor="idea-project">关联项目</label>
+                <select
+                  id="idea-project"
+                  value={draft.projectId ?? ""}
+                  onChange={(event) =>
+                    setDraft({ ...draft, projectId: event.target.value })
+                  }
+                >
+                  <option value="">未关联项目</option>
+                  {snapshot?.projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           ) : null}
           {entity === "event" ? (

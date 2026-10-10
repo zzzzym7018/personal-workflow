@@ -158,3 +158,23 @@ test("schedules, goals, and projects expose confirmed permanent deletion", async
   assert.match(styles, /\.button--danger/);
   assert.match(styles, /\.row-action--delete/);
 });
+
+test("idea and question cards open a prefilled shared editor", async () => {
+  const [client, api, styles] = await Promise.all([
+    readFile(new URL("../app/workspace/WorkspaceApp.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/workspace/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+  assert.match(client, /function openIdeaEditor\(idea: Idea\)/);
+  assert.match(client, /onEdit=\{openIdeaEditor\}/);
+  assert.match(client, /id=\{`idea-edit-\$\{idea\.id\}`\}/);
+  assert.match(client, /className="idea-card-edit-target"/);
+  assert.match(client, /type: idea\.type/);
+  assert.match(client, /note: idea\.note/);
+  assert.match(client, /projectId: idea\.projectId \?\? ""/);
+  assert.match(client, /domainId: idea\.domainId \?\? ""/);
+  assert.match(client, /id="idea-domain"/);
+  assert.match(client, /id="idea-project"/);
+  assert.match(api, /data\.type !== undefined/);
+  assert.match(styles, /\.idea-card-edit-target/);
+});

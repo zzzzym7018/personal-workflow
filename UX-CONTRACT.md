@@ -67,6 +67,7 @@
 | Edit | 保存更改 | stable busy action | stay in context | “更改已保存” | keep editor + retry | edited item | PRODUCT.md |
 | Edit schedule | Time Rail 日程块 | prefilled event editor | stay on Today | “日程已更新” toast | keep values + inline error | edited time block | PRODUCT.md |
 | Edit project | 项目卡片非操作区域 | prefilled project editor | stay on Projects | “项目已更新” toast | keep values + inline error | edited project card | PRODUCT.md |
+| Edit Idea/question | Idea/疑问卡片非操作区域 | prefilled shared editor | stay on Ideas | “线索已更新” toast | keep editor + inline error | edited card | PRODUCT.md |
 | Archive | 归档 | confirmation busy | stay in list | “已归档” + Undo when honest | dialog remains + retry | next item | PRODUCT.md |
 | Permanent delete | 删除 | danger confirmation + stable busy action | stay in owning view | “已永久删除” toast | dialog remains + inline retry error | owning view heading | PRODUCT.md |
 | Search | 全局搜索 | local, no network wait | same view | result count status | clear/reset | input/results | PRODUCT.md |
@@ -79,7 +80,7 @@
 - Route document title policy: `{页面} — 知行台`；client view changes update the title。
 - Route error / 403 page behavior: keep product identity and offer sign-in/home path; do not disguise 403 as 404。
 - Sidebar/drawer/bottom-sheet transformation: persistent left sidebar ≥760px；mobile bottom navigation and full-width editor below。
-- Responsive record strategy: project cards use two columns on wide screens and one column on narrow screens；subgoals stay inside their owning project card；项目卡片非操作区域使用独立语义按钮打开名称、DDL 与笔记编辑，卡内操作不触发项目编辑。
+- Responsive record strategy: project cards use two columns on wide screens and one column on narrow screens；subgoals stay inside their owning project card；项目卡片非操作区域使用独立语义按钮打开名称、DDL 与笔记编辑，卡内操作不触发项目编辑。Idea/疑问卡片使用相同的整卡编辑入口，状态与归档按钮保持独立。
 - Calendar grid strategy: 周视图固定日期头与时间栏，08:00—24:00 由同一连续比例轴定位；所有屏幕使用舒适日列宽的横向窗口并默认定位到今天，时间网格拥有横向和纵向滚动，不裁切日期或事件。
 - Focus restoration: modal/drawer returns focus to trigger; sticky controls use scroll-margin and safe-area padding。
 

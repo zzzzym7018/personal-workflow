@@ -163,7 +163,7 @@ async function updateEntity(entity: EntityName, id: string, data: JsonRecord) {
       await db.update(domains).set(patch).where(eq(domains.id, id)); return { id, ...patch };
     }
     case "idea": {
-      const patch = { ...(data.title !== undefined ? { title: requiredText(data.title, "请填写内容。") } : {}), ...(data.note !== undefined ? { note: optionalText(data.note) } : {}), ...(data.status !== undefined ? { status: optionalText(data.status) } : {}), ...(data.projectId !== undefined ? { projectId: nullableText(data.projectId) } : {}), ...(data.domainId !== undefined ? { domainId: nullableText(data.domainId) } : {}), updatedAt };
+      const patch = { ...(data.title !== undefined ? { title: requiredText(data.title, "请填写内容。") } : {}), ...(data.note !== undefined ? { note: optionalText(data.note) } : {}), ...(data.type !== undefined ? { type: optionalText(data.type) === "question" ? "question" : "idea" } : {}), ...(data.status !== undefined ? { status: optionalText(data.status) } : {}), ...(data.projectId !== undefined ? { projectId: nullableText(data.projectId) } : {}), ...(data.domainId !== undefined ? { domainId: nullableText(data.domainId) } : {}), updatedAt };
       await db.update(ideas).set(patch).where(eq(ideas.id, id)); return { id, ...patch };
     }
     case "event": {
