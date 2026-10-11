@@ -1,11 +1,11 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "../../../db";
-import { domains, events, ideas, learningLogs, projects, tasks } from "../../../db/schema";
+import { domains, events, ideas, knowledgeNotes, learningLogs, projects, tasks } from "../../../db/schema";
 import { deleteGoogleCalendarEvent } from "../../lib/google-calendar";
 import { accessErrorResponse, requireAllowedViewer } from "../../lib/server-auth";
 import { getWorkspaceSnapshot, nowIso, seedWorkspace } from "../../lib/workspace-db";
 
-type EntityName = "project" | "task" | "domain" | "idea" | "event" | "learningLog";
+type EntityName = "project" | "task" | "domain" | "idea" | "event" | "learningLog" | "knowledgeNote";
 type JsonRecord = Record<string, unknown>;
 
 class InputError extends Error {}
@@ -51,7 +51,7 @@ export async function DELETE(request: Request) {
     const viewer = await requireAllowedViewer();
     await seedWorkspace();
     const body = (await request.json()) as {
-      entity?: Exclude<EntityName, "learningLog">;
+      entity?: Exclude<EntityName, "learningLog" | "knowledgeNote">;
       id?: string;
       action?: "archive" | "delete";
     };
@@ -143,6 +143,13 @@ async function createEntity(entity: EntityName, data: JsonRecord) {
       const row = { id, domainId, title, note: optionalText(data.note), minutes: clampNumber(data.minutes, 0, 1_440, 0), occurredAt: requiredIso(data.occurredAt ?? now, "学习时间无效。 "), createdAt: now, updatedAt: now };
       await db.insert(learningLogs).values(row); return row;
     }
+    case "knowledgeNote": {
+      const kind = knowledgeNoteKind(data.kind);
+      const domainId = nullableText(data.domainId);
+      if (kind !== "note" && !domainId) throw new InputError("请选择这条认知所属的领域。 ");
+      const row = { id, domainId, kind, stage: kind === "stage" ? clampNumber(data.stage, 1, 5, 1) : null, title, content: optionalText(data.note ?? data.content), archivedAt: null, createdAt: now, updatedAt: now };
+      await db.insert(knowledgeNotes).values(row); return row;
+    }
   }
 }
 
@@ -178,6 +185,26 @@ async function updateEntity(entity: EntityName, id: string, data: JsonRecord) {
       const patch = { ...(data.title !== undefined ? { title: requiredText(data.title, "请填写学习记录。") } : {}), ...(data.note !== undefined ? { note: optionalText(data.note) } : {}), ...(data.minutes !== undefined ? { minutes: clampNumber(data.minutes, 0, 1_440, 0) } : {}), updatedAt };
       await db.update(learningLogs).set(patch).where(eq(learningLogs.id, id)); return { id, ...patch };
     }
+    case "knowledgeNote": {
+      const kind = data.kind !== undefined ? knowledgeNoteKind(data.kind) : undefined;
+      const domainId = data.domainId !== undefined ? nullableText(data.domainId) : undefined;
+      if (kind && kind !== "note" && domainId === null) {
+        throw new InputError("请选择这条认知所属的领域。 ");
+      }
+      const patch = {
+        ...(data.title !== undefined ? { title: requiredText(data.title, "请填写认知条目标题。") } : {}),
+        ...(data.note !== undefined || data.content !== undefined ? { content: optionalText(data.note ?? data.content) } : {}),
+        ...(kind ? { kind } : {}),
+        ...(domainId !== undefined ? { domainId } : {}),
+        ...(kind
+          ? { stage: kind === "stage" ? clampNumber(data.stage, 1, 5, 1) : null }
+          : data.stage !== undefined
+            ? { stage: clampNumber(data.stage, 1, 5, 1) }
+            : {}),
+        updatedAt,
+      };
+      await db.update(knowledgeNotes).set(patch).where(eq(knowledgeNotes.id, id)); return { id, ...patch };
+    }
   }
 }
 
@@ -193,6 +220,11 @@ function optionalText(value: unknown) {
 function nullableText(value: unknown) {
   const text = optionalText(value);
   return text || null;
+}
+
+function knowledgeNoteKind(value: unknown) {
+  const kind = optionalText(value);
+  return ["insight", "branch", "stage", "note"].includes(kind) ? kind : "note";
 }
 
 function clampNumber(value: unknown, min: number, max: number, fallback: number) {

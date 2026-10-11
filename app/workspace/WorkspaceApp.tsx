@@ -17,7 +17,13 @@ type ViewKey =
   | "review"
   | "settings";
 type EntityName =
-  "project" | "task" | "domain" | "idea" | "event" | "learningLog";
+  | "project"
+  | "task"
+  | "domain"
+  | "idea"
+  | "event"
+  | "learningLog"
+  | "knowledgeNote";
 type Viewer = { displayName: string; email: string; isPreview: boolean };
 type Project = {
   id: string;
@@ -65,6 +71,16 @@ type LearningLog = {
   createdAt: string;
   updatedAt: string;
 };
+type KnowledgeNote = {
+  id: string;
+  domainId: string | null;
+  kind: "insight" | "branch" | "stage" | "note";
+  stage: number | null;
+  title: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+};
 type Idea = {
   id: string;
   title: string;
@@ -97,6 +113,7 @@ type Snapshot = {
   tasks: Task[];
   domains: Domain[];
   learningLogs: LearningLog[];
+  knowledgeNotes: KnowledgeNote[];
   ideas: Idea[];
   events: CalendarEvent[];
   viewer: Viewer;
@@ -172,7 +189,7 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [archiveTarget, setArchiveTarget] = useState<{
-    entity: Exclude<EntityName, "learningLog">;
+    entity: Exclude<EntityName, "learningLog" | "knowledgeNote">;
     id: string;
     title: string;
   } | null>(null);
@@ -305,6 +322,7 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
     setEditorError("");
     setDraft({
       type: entity === "idea" ? "idea" : "",
+      kind: entity === "knowledgeNote" ? "insight" : "",
       date,
       dueDate: entity === "task" ? date : "",
       start: "09:00",
@@ -354,6 +372,33 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
       status: idea.status,
       projectId: idea.projectId ?? "",
       domainId: idea.domainId ?? "",
+    });
+  }
+
+  function openDomainEditor(domain: Domain) {
+    editorReturnFocusIdRef.current = `domain-select-${domain.id}`;
+    setEditor("domain");
+    setEditorTargetId(domain.id);
+    setEditorError("");
+    setDraft({
+      title: domain.title,
+      stage: String(domain.stage),
+      summary: domain.summary,
+      nextStep: domain.nextStep,
+    });
+  }
+
+  function openKnowledgeNoteEditor(note: KnowledgeNote) {
+    editorReturnFocusIdRef.current = `knowledge-note-${note.id}`;
+    setEditor("knowledgeNote");
+    setEditorTargetId(note.id);
+    setEditorError("");
+    setDraft({
+      title: note.title,
+      kind: note.kind,
+      stage: String(note.stage ?? 1),
+      domainId: note.domainId ?? "",
+      note: note.content,
     });
   }
 
@@ -756,10 +801,15 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
               {activeView === "learning" ? (
                 <LearningView
                   domains={snapshot.domains}
-                  ideas={snapshot.ideas}
                   logs={snapshot.learningLogs}
+                  notes={snapshot.knowledgeNotes}
                   onCreateDomain={() => openEditor("domain")}
+                  onEditDomain={openDomainEditor}
                   onCreateLog={() => openEditor("learningLog")}
+                  onCreateNote={(defaults) =>
+                    openEditor("knowledgeNote", defaults)
+                  }
+                  onEditNote={openKnowledgeNoteEditor}
                   onUpdate={updateItem}
                 />
               ) : null}
@@ -1124,7 +1174,7 @@ function TodayView({
               type="button"
               onClick={() => onNavigate("learning")}
             >
-              知识观测图
+              认知档案
             </button>
           </div>
           <div className="domain-mini-grid">
@@ -1844,17 +1894,23 @@ function ProjectsView({
 
 function LearningView({
   domains,
-  ideas,
   logs,
+  notes,
   onCreateDomain,
+  onEditDomain,
   onCreateLog,
+  onCreateNote,
+  onEditNote,
   onUpdate,
 }: {
   domains: Domain[];
-  ideas: Idea[];
   logs: LearningLog[];
+  notes: KnowledgeNote[];
   onCreateDomain: () => void;
+  onEditDomain: (domain: Domain) => void;
   onCreateLog: () => void;
+  onCreateNote: (defaults: EditorDraft) => void;
+  onEditNote: (note: KnowledgeNote) => void;
   onUpdate: (
     entity: EntityName,
     id: string,
@@ -1863,15 +1919,39 @@ function LearningView({
   ) => void;
 }) {
   const [selectedId, setSelectedId] = useState(domains[0]?.id ?? "");
+  const [noteScope, setNoteScope] = useState<"domain" | "cross">("domain");
   const selected =
     domains.find((domain) => domain.id === selectedId) ?? domains[0];
+  const selectedNotes = selected
+    ? notes.filter((note) => note.domainId === selected.id)
+    : [];
+  const insights = selectedNotes.filter((note) => note.kind === "insight");
+  const branches = selectedNotes.filter((note) => note.kind === "branch");
+  const stageSummaries = selectedNotes.filter((note) => note.kind === "stage");
+  const domainNotes = selectedNotes.filter((note) => note.kind === "note");
+  const crossDomainNotes = notes.filter(
+    (note) => note.kind === "note" && !note.domainId,
+  );
+  const visibleNotes = noteScope === "domain" ? domainNotes : crossDomainNotes;
+
+  function createKnowledgeNote(
+    kind: KnowledgeNote["kind"],
+    domainId = selected?.id ?? "",
+  ) {
+    onCreateNote({
+      kind,
+      domainId,
+      stage: String(selected?.stage ?? 1),
+    });
+  }
+
   return (
     <div className="page-stack page-enter">
       <section className="page-intro">
         <div>
           <p className="eyebrow">LEARNING DOMAINS</p>
-          <h2>记录理解的变化，而不是收藏材料</h2>
-          <p>领域、疑问和项目围绕真实的学习进展形成可探索轨迹。</p>
+          <h2>把学习压缩成可回顾的认知档案</h2>
+          <p>按领域整理核心认知、知识分支与阶段总结，也保留跨领域连接。</p>
         </div>
         <div className="intro-actions">
           <button
@@ -1890,32 +1970,217 @@ function LearningView({
           </button>
         </div>
       </section>
-      <div className="learning-layout">
-        <KnowledgeOrbit
-          domains={domains}
-          ideas={ideas}
-          selectedId={selected?.id}
-          onSelect={setSelectedId}
-        />
-        <aside className="panel learning-detail">
-          {selected ? (
-            <>
-              <p className="eyebrow">CURRENT DOMAIN</p>
-              <h2>{selected.title}</h2>
-              <span className="stage-label">
-                阶段 {String(selected.stage).padStart(2, "0")} / 05 ·{" "}
-                {stageLabels[selected.stage - 1]}
-              </span>
+
+      {domains.length ? (
+        <section className="domain-library" aria-labelledby="domain-library-title">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">DOMAIN LIBRARY</p>
+              <h2 id="domain-library-title">领域书架</h2>
+            </div>
+            <span>{domains.length} 个领域</span>
+          </div>
+          <div className="domain-shelf">
+            {domains.map((domain) => {
+              const domainKnowledge = notes.filter(
+                (note) => note.domainId === domain.id && note.kind !== "note",
+              ).length;
+              return (
+                <button
+                  id={`domain-select-${domain.id}`}
+                  className={`domain-shelf-card ${selected?.id === domain.id ? "is-selected" : ""}`}
+                  type="button"
+                  key={domain.id}
+                  aria-pressed={selected?.id === domain.id}
+                  style={{ "--domain-color": domain.color } as CSSProperties}
+                  onClick={() => setSelectedId(domain.id)}
+                >
+                  <div className="domain-card-meta">
+                    <span className="domain-card-stage">
+                      阶段 {domain.stage} · {stageLabels[domain.stage - 1]}
+                    </span>
+                    <span className="domain-card-status">
+                      {domain.stage >= 5 ? "已完成" : "学习中"}
+                    </span>
+                  </div>
+                  <strong>{domain.title}</strong>
+                  <p>{domain.summary || "还没有写下这一领域的核心理解。"}</p>
+                  <small>{domainKnowledge} 条认知记录</small>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      ) : (
+        <section className="panel learning-empty-state">
+          <EmptyState
+            title="还没有学习领域"
+            description="创建一个领域，开始沉淀自己的认知框架。"
+            action="新建领域"
+            onAction={onCreateDomain}
+          />
+        </section>
+      )}
+
+      {selected ? (
+        <div className="learning-workbench">
+          <section className="panel knowledge-record" aria-labelledby="knowledge-record-title">
+            <header className="knowledge-record-header">
+              <div>
+                <p className="eyebrow">COGNITIVE RECORD</p>
+                <h2 id="knowledge-record-title">{selected.title}</h2>
+                <span>
+                  阶段 {String(selected.stage).padStart(2, "0")} / 05 ·{" "}
+                  {stageLabels[selected.stage - 1]} · {selected.stage >= 5 ? "已完成" : "学习中"}
+                </span>
+              </div>
+              <button
+                className="button button--outline"
+                type="button"
+                onClick={() => onEditDomain(selected)}
+              >
+                编辑领域
+              </button>
+            </header>
+
+            <div className="cognition-summary">
+              <span>当前理解</span>
+              <p>{selected.summary || "用一两句话写下你目前对这个领域最重要的理解。"}</p>
+            </div>
+
+            <section className="knowledge-section">
+              <div className="section-heading section-heading--compact">
+                <div>
+                  <p className="eyebrow">KEY INSIGHTS</p>
+                  <h3>核心认知</h3>
+                </div>
+                <button
+                  className="text-button"
+                  type="button"
+                  onClick={() => createKnowledgeNote("insight")}
+                >
+                  ＋ 记录认知
+                </button>
+              </div>
+              {insights.length ? (
+                <div className="insight-grid">
+                  {insights.map((note, index) => (
+                    <KnowledgeNoteCard
+                      key={note.id}
+                      note={note}
+                      index={index}
+                      onEdit={onEditNote}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <KnowledgeEmpty
+                  text="把最能改变你思考方式的结论写在这里。"
+                  action="记录第一条认知"
+                  onAction={() => createKnowledgeNote("insight")}
+                />
+              )}
+            </section>
+
+            <section className="knowledge-section">
+              <div className="section-heading section-heading--compact">
+                <div>
+                  <p className="eyebrow">KNOWLEDGE BRANCHES</p>
+                  <h3>知识分支</h3>
+                </div>
+                <button
+                  className="text-button"
+                  type="button"
+                  onClick={() => createKnowledgeNote("branch")}
+                >
+                  ＋ 新增分支
+                </button>
+              </div>
+              {branches.length ? (
+                <div className="branch-grid">
+                  {branches.map((note, index) => (
+                    <KnowledgeNoteCard
+                      key={note.id}
+                      note={note}
+                      index={index}
+                      onEdit={onEditNote}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <KnowledgeEmpty
+                  text="用高度凝练的分支整理这个领域的组成部分。"
+                  action="添加第一个分支"
+                  onAction={() => createKnowledgeNote("branch")}
+                />
+              )}
+            </section>
+
+            <section className="knowledge-section">
+              <div className="section-heading section-heading--compact">
+                <div>
+                  <p className="eyebrow">STAGE NOTES</p>
+                  <h3>分阶段总结</h3>
+                </div>
+                <button
+                  className="text-button"
+                  type="button"
+                  onClick={() => createKnowledgeNote("stage")}
+                >
+                  ＋ 写阶段总结
+                </button>
+              </div>
+              <div className="stage-timeline">
+                {stageLabels.map((label, index) => {
+                  const stage = index + 1;
+                  const stageNotes = stageSummaries.filter(
+                    (note) => note.stage === stage,
+                  );
+                  return (
+                    <div
+                      className={`stage-timeline-row ${stage < selected.stage ? "is-complete" : stage === selected.stage ? "is-current" : ""}`}
+                      key={label}
+                    >
+                      <span className="stage-index">{String(stage).padStart(2, "0")}</span>
+                      <div>
+                        <strong>{label}</strong>
+                        {stageNotes.length ? (
+                          stageNotes.map((note) => (
+                            <button
+                              id={`knowledge-note-${note.id}`}
+                              className="stage-note-link"
+                              type="button"
+                              key={note.id}
+                              onClick={() => onEditNote(note)}
+                            >
+                              <span>{note.title}</span>
+                              <small>{note.content || "打开补充这一阶段的总结"}</small>
+                            </button>
+                          ))
+                        ) : (
+                          <small>{stage <= selected.stage ? "尚未写总结" : "尚未到达"}</small>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          </section>
+
+          <aside className="learning-sidebar">
+            <section className="panel learning-progress-card">
+              <p className="eyebrow">LEARNING POSITION</p>
+              <div className="stage-label">
+                <span>当前阶段</span>
+                <strong>{selected.stage} / 5</strong>
+              </div>
               <StageMeter stage={selected.stage} />
-              <div className="detail-section">
-                <h3>当前理解</h3>
-                <p>{selected.summary || "还没有理解摘要。"}</p>
+              <div className="next-step-block">
+                <span>下一步</span>
+                <p>{selected.nextStep || "确定下一步具体的学习行动。"}</p>
               </div>
-              <div className="detail-section">
-                <h3>下一步</h3>
-                <p>{selected.nextStep || "确定下一步学习行动。"}</p>
-              </div>
-              <div className="stage-controls">
+              <div className="stage-controls stage-controls--wide">
                 <button
                   type="button"
                   disabled={selected.stage <= 1}
@@ -1945,18 +2210,75 @@ function LearningView({
                   推进阶段
                 </button>
               </div>
-            </>
-          ) : (
-            <EmptyState
-              title="还没有学习领域"
-              description="创建一个领域，开始记录理解进度。"
-              action="新建领域"
-              onAction={onCreateDomain}
-            />
-          )}
-        </aside>
-      </div>
-      <section className="panel log-panel">
+            </section>
+
+            <section className="panel knowledge-notebook">
+              <div className="section-heading section-heading--compact">
+                <div>
+                  <p className="eyebrow">NOTEBOOK</p>
+                  <h3>笔记</h3>
+                </div>
+                <button
+                  className="text-button"
+                  type="button"
+                  onClick={() =>
+                    createKnowledgeNote(
+                      "note",
+                      noteScope === "domain" ? selected.id : "",
+                    )
+                  }
+                >
+                  ＋ 新建
+                </button>
+              </div>
+              <div className="segmented notebook-tabs" role="group" aria-label="笔记范围">
+                <button
+                  type="button"
+                  aria-pressed={noteScope === "domain"}
+                  onClick={() => setNoteScope("domain")}
+                >
+                  领域内
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={noteScope === "cross"}
+                  onClick={() => setNoteScope("cross")}
+                >
+                  跨领域
+                </button>
+              </div>
+              <div className="notebook-list">
+                {visibleNotes.length ? (
+                  visibleNotes.map((note) => (
+                    <KnowledgeNoteCard
+                      key={note.id}
+                      note={note}
+                      onEdit={onEditNote}
+                    />
+                  ))
+                ) : (
+                  <KnowledgeEmpty
+                    text={
+                      noteScope === "domain"
+                        ? "保存与当前领域有关、但还不属于认知骨架的笔记。"
+                        : "把跨越多个领域的连接与启发集中放在这里。"
+                    }
+                    action={noteScope === "domain" ? "写领域笔记" : "写跨领域笔记"}
+                    onAction={() =>
+                      createKnowledgeNote(
+                        "note",
+                        noteScope === "domain" ? selected.id : "",
+                      )
+                    }
+                  />
+                )}
+              </div>
+            </section>
+          </aside>
+        </div>
+      ) : null}
+
+      <section className="panel log-panel learning-log-panel">
         <div className="panel-heading">
           <h2>最近学习记录</h2>
           <span>{logs.length} 条</span>
@@ -1988,63 +2310,48 @@ function LearningView({
   );
 }
 
-function KnowledgeOrbit({
-  domains,
-  ideas,
-  selectedId,
-  onSelect,
+function KnowledgeNoteCard({
+  note,
+  index,
+  onEdit,
 }: {
-  domains: Domain[];
-  ideas: Idea[];
-  selectedId?: string;
-  onSelect: (id: string) => void;
+  note: KnowledgeNote;
+  index?: number;
+  onEdit: (note: KnowledgeNote) => void;
 }) {
   return (
-    <section className="panel orbit-panel" aria-labelledby="orbit-title">
-      <div className="panel-heading">
-        <div>
-          <p className="eyebrow">KNOWLEDGE ORBITS</p>
-          <h2 id="orbit-title">知识观测图</h2>
-        </div>
-        <span>选择节点查看进展</span>
-      </div>
-      <div className="orbit-map">
-        <div className="orbit orbit--outer" aria-hidden="true" />
-        <div className="orbit orbit--middle" aria-hidden="true" />
-        <div className="orbit orbit--inner" aria-hidden="true" />
-        <div className="orbit-core">
-          <span>CURRENT</span>
-          <strong>研究核心</strong>
-        </div>
-        {domains.map((domain, index) => (
-          <button
-            key={domain.id}
-            type="button"
-            className={`orbit-node orbit-node--${index % 4} ${selectedId === domain.id ? "is-selected" : ""}`}
-            style={{ "--node-color": domain.color } as CSSProperties}
-            onClick={() => onSelect(domain.id)}
-          >
-            <span>DOMAIN</span>
-            <strong>{domain.title}</strong>
-            <small>阶段 {String(domain.stage).padStart(2, "0")} / 05</small>
-          </button>
-        ))}
-        {ideas
-          .filter(
-            (idea) => idea.type === "question" && idea.status !== "resolved",
-          )
-          .slice(0, 2)
-          .map((idea, index) => (
-            <div
-              className={`orbit-question orbit-question--${index}`}
-              key={idea.id}
-            >
-              <span>?</span>
-              <p>{idea.title}</p>
-            </div>
-          ))}
-      </div>
-    </section>
+    <button
+      id={`knowledge-note-${note.id}`}
+      className={`knowledge-note-card knowledge-note-card--${note.kind}`}
+      type="button"
+      onClick={() => onEdit(note)}
+    >
+      {index !== undefined ? (
+        <span className="knowledge-note-index">{String(index + 1).padStart(2, "0")}</span>
+      ) : null}
+      <strong>{note.title}</strong>
+      <p>{note.content || "打开补充内容"}</p>
+      <small>{knowledgeNoteKindLabel(note.kind)}</small>
+    </button>
+  );
+}
+
+function KnowledgeEmpty({
+  text,
+  action,
+  onAction,
+}: {
+  text: string;
+  action: string;
+  onAction: () => void;
+}) {
+  return (
+    <div className="knowledge-empty">
+      <p>{text}</p>
+      <button className="text-button" type="button" onClick={onAction}>
+        {action}
+      </button>
+    </div>
   );
 }
 
@@ -2701,6 +3008,64 @@ function EditorDialog({
               </select>
             </div>
           ) : null}
+          {entity === "knowledgeNote" ? (
+            <>
+              <div className="field-row field-row--two">
+                <div className="field-group">
+                  <label htmlFor="knowledge-kind">条目类型</label>
+                  <select
+                    id="knowledge-kind"
+                    value={draft.kind ?? "insight"}
+                    onChange={(event) =>
+                      setDraft({ ...draft, kind: event.target.value })
+                    }
+                  >
+                    <option value="insight">核心认知</option>
+                    <option value="branch">知识分支</option>
+                    <option value="stage">阶段总结</option>
+                    <option value="note">普通笔记</option>
+                  </select>
+                </div>
+                <div className="field-group">
+                  <label htmlFor="knowledge-domain">所属领域</label>
+                  <select
+                    id="knowledge-domain"
+                    value={draft.domainId ?? ""}
+                    onChange={(event) =>
+                      setDraft({ ...draft, domainId: event.target.value })
+                    }
+                  >
+                    <option value="">
+                      {draft.kind === "note" ? "跨领域" : "选择领域"}
+                    </option>
+                    {snapshot?.domains.map((domain) => (
+                      <option key={domain.id} value={domain.id}>
+                        {domain.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              {draft.kind === "stage" ? (
+                <div className="field-group">
+                  <label htmlFor="knowledge-stage">对应阶段</label>
+                  <select
+                    id="knowledge-stage"
+                    value={draft.stage ?? "1"}
+                    onChange={(event) =>
+                      setDraft({ ...draft, stage: event.target.value })
+                    }
+                  >
+                    {stageLabels.map((item, index) => (
+                      <option key={item} value={index + 1}>
+                        {index + 1} · {item}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
+            </>
+          ) : null}
           {entity === "learningLog" ? (
             <>
               <div className="field-group">
@@ -2769,7 +3134,9 @@ function EditorDialog({
                   ? "项目笔记"
                   : entity === "task" && draft.projectId
                     ? "子目标说明"
-                  : "笔记"}
+                    : entity === "knowledgeNote"
+                      ? "内容"
+                      : "笔记"}
             </label>
             <textarea
               className="resize-none"
@@ -3187,7 +3554,16 @@ function entityLabel(entity: EntityName) {
     idea: "线索",
     event: "日程",
     learningLog: "学习记录",
+    knowledgeNote: "认知条目",
   }[entity];
+}
+function knowledgeNoteKindLabel(kind: KnowledgeNote["kind"]) {
+  return {
+    insight: "核心认知",
+    branch: "知识分支",
+    stage: "阶段总结",
+    note: "笔记",
+  }[kind];
 }
 function localDateKey(date: Date) {
   return new Intl.DateTimeFormat("en-CA", {

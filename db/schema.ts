@@ -54,6 +54,17 @@ export const learningLogs = sqliteTable("learning_logs", {
   ...timestamps,
 });
 
+export const knowledgeNotes = sqliteTable("knowledge_notes", {
+  id: text("id").primaryKey(),
+  domainId: text("domain_id"),
+  kind: text("kind").notNull().default("note"),
+  stage: integer("stage"),
+  title: text("title").notNull(),
+  content: text("content").notNull().default(""),
+  archivedAt: text("archived_at"),
+  ...timestamps,
+});
+
 export const ideas = sqliteTable("ideas", {
   id: text("id").primaryKey(),
   title: text("title").notNull(),

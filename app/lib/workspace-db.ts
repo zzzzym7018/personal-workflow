@@ -7,6 +7,7 @@ import {
   googleCalendars,
   googleConnections,
   ideas,
+  knowledgeNotes,
   learningLogs,
   projects,
   tasks,
@@ -35,6 +36,11 @@ const schemaStatements = [
     id TEXT PRIMARY KEY, domain_id TEXT NOT NULL, title TEXT NOT NULL, note TEXT NOT NULL DEFAULT '', minutes INTEGER NOT NULL DEFAULT 0,
     occurred_at TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
   )`,
+  `CREATE TABLE IF NOT EXISTS knowledge_notes (
+    id TEXT PRIMARY KEY, domain_id TEXT, kind TEXT NOT NULL DEFAULT 'note', stage INTEGER,
+    title TEXT NOT NULL, content TEXT NOT NULL DEFAULT '', archived_at TEXT,
+    created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+  )`,
   `CREATE TABLE IF NOT EXISTS ideas (
     id TEXT PRIMARY KEY, title TEXT NOT NULL, note TEXT NOT NULL DEFAULT '', type TEXT NOT NULL DEFAULT 'idea',
     status TEXT NOT NULL DEFAULT 'inbox', project_id TEXT, domain_id TEXT, archived_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
@@ -56,6 +62,7 @@ const schemaStatements = [
   "CREATE INDEX IF NOT EXISTS events_external_idx ON events(external_calendar_id, external_id)",
   "CREATE INDEX IF NOT EXISTS tasks_project_idx ON tasks(project_id, status)",
   "CREATE INDEX IF NOT EXISTS ideas_domain_idx ON ideas(domain_id, status)",
+  "CREATE INDEX IF NOT EXISTS knowledge_notes_domain_idx ON knowledge_notes(domain_id, kind, updated_at)",
   "CREATE UNIQUE INDEX IF NOT EXISTS google_calendar_owner_idx ON google_calendars(user_email, calendar_id)",
 ];
 
@@ -181,15 +188,16 @@ export async function seedWorkspace() {
 export async function getWorkspaceSnapshot() {
   await seedWorkspace();
   const db = getDb();
-  const [projectRows, taskRows, domainRows, logRows, ideaRows, eventRows] = await Promise.all([
+  const [projectRows, taskRows, domainRows, logRows, knowledgeNoteRows, ideaRows, eventRows] = await Promise.all([
     db.select().from(projects).where(isNull(projects.archivedAt)).orderBy(asc(projects.createdAt)),
     db.select().from(tasks).where(isNull(tasks.archivedAt)).orderBy(asc(tasks.createdAt)),
     db.select().from(domains).where(isNull(domains.archivedAt)).orderBy(asc(domains.createdAt)),
     db.select().from(learningLogs).orderBy(desc(learningLogs.occurredAt)).limit(50),
+    db.select().from(knowledgeNotes).where(isNull(knowledgeNotes.archivedAt)).orderBy(desc(knowledgeNotes.updatedAt)),
     db.select().from(ideas).where(isNull(ideas.archivedAt)).orderBy(desc(ideas.createdAt)),
     db.select().from(events).where(isNull(events.archivedAt)).orderBy(asc(events.startAt)),
   ]);
-  return { projects: projectRows, tasks: taskRows, domains: domainRows, learningLogs: logRows, ideas: ideaRows, events: eventRows };
+  return { projects: projectRows, tasks: taskRows, domains: domainRows, learningLogs: logRows, knowledgeNotes: knowledgeNoteRows, ideas: ideaRows, events: eventRows };
 }
 
 export async function getGoogleConnection(email: string) {

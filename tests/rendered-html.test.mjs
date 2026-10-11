@@ -14,7 +14,8 @@ test("builds the private workspace shell", async () => {
   assert.match(layout, /知行台/);
   assert.match(layout, /og-zhixing-desk\.png/);
   assert.match(workspace, /aria-label="主要导航"/);
-  assert.match(workspace, /知识观测图/);
+  assert.match(workspace, /领域书架/);
+  assert.doesNotMatch(workspace, /知识观测图|KnowledgeOrbit/);
   assert.doesNotMatch(page + layout + workspace, /react-loading-skeleton|Your site is taking shape/);
 });
 
@@ -180,4 +181,35 @@ test("idea and question cards open a prefilled shared editor", async () => {
   assert.match(api, /data\.type !== undefined/);
   assert.match(styles, /\.idea-card-edit-target/);
   assert.match(styles, /\.editor-title-textarea \{[^}]*min-height: 64px[^}]*max-height: 144px/);
+});
+
+test("learning uses editable cognitive records and scoped notes", async () => {
+  const [client, api, database, schema, styles, migration] = await Promise.all([
+    readFile(new URL("../app/workspace/WorkspaceApp.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/workspace/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/lib/workspace-db.ts", import.meta.url), "utf8"),
+    readFile(new URL("../db/schema.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+    readFile(new URL("../drizzle/0003_oval_hellcat.sql", import.meta.url), "utf8"),
+  ]);
+  assert.match(client, /className="domain-shelf"/);
+  assert.match(client, /核心认知/);
+  assert.match(client, /知识分支/);
+  assert.match(client, /分阶段总结/);
+  assert.match(client, /领域内/);
+  assert.match(client, /跨领域/);
+  assert.match(client, /domain\.stage >= 5 \? "已完成" : "学习中"/);
+  assert.match(client, /function openKnowledgeNoteEditor/);
+  assert.match(client, /id="knowledge-kind"/);
+  assert.match(client, /id="knowledge-domain"/);
+  assert.match(client, /onEditNote={openKnowledgeNoteEditor}/);
+  assert.match(api, /case "knowledgeNote"/);
+  assert.match(api, /db\.insert\(knowledgeNotes\)/);
+  assert.match(api, /db\.update\(knowledgeNotes\)/);
+  assert.match(database, /knowledgeNoteRows/);
+  assert.match(schema, /export const knowledgeNotes = sqliteTable\("knowledge_notes"/);
+  assert.match(styles, /\.learning-workbench/);
+  assert.match(styles, /\.domain-shelf-card/);
+  assert.match(styles, /\.stage-timeline/);
+  assert.match(migration, /CREATE TABLE `knowledge_notes`/);
 });
