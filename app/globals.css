@@ -285,7 +285,8 @@ kbd { padding: 2px 7px; border: 1px solid var(--line); border-bottom-width: 2px;
 .section-heading > span { color: var(--ink-muted); font-size: 11px; }
 .section-heading--compact { align-items: center; }
 .domain-library { display: grid; gap: 13px; }
-.domain-shelf { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.domain-shelf { display: grid; grid-auto-columns: clamp(238px, 26vw, 310px); grid-auto-flow: column; gap: 12px; padding: 2px 2px 12px; overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-gutter: stable; }
+.domain-shelf:focus-visible { border-radius: 16px; outline-offset: 4px; }
 .domain-shelf-card { position: relative; display: grid; min-height: 172px; align-content: start; gap: 9px; padding: 17px 18px 15px; overflow: hidden; border: 1px solid var(--line); border-radius: 15px; background: var(--surface); box-shadow: 0 7px 22px rgba(23, 35, 59, 0.035); text-align: left; transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease; }
 .domain-shelf-card::before { position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--domain-color); content: ""; }
 .domain-shelf-card:hover { border-color: color-mix(in srgb, var(--domain-color), var(--line) 46%); transform: translateY(-1px); box-shadow: 0 11px 26px rgba(23, 35, 59, 0.075); }
@@ -547,7 +548,7 @@ kbd { padding: 2px 7px; border: 1px solid var(--line); border-bottom-width: 2px;
   .project-card-footer .button { width: 100%; }
   .idea-grid, .review-stats { grid-template-columns: 1fr; }
   .review-stats article { border-right: 0; border-bottom: 1px solid var(--line); }
-  .domain-shelf { grid-template-columns: 1fr; }
+  .domain-shelf { grid-auto-columns: minmax(244px, 84vw); }
   .domain-shelf-card { min-height: 150px; }
   .learning-sidebar, .insight-grid, .branch-grid { grid-template-columns: 1fr; }
   .knowledge-record { padding: 19px 17px 22px; }

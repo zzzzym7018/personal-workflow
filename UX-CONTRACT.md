@@ -72,6 +72,7 @@
 | Edit cognition/note | 认知、分支、阶段总结或笔记卡片 | prefilled shared editor | stay on selected domain | “认知条目已更新” toast | keep editor + inline error | edited card | PRODUCT.md |
 | Archive | 归档 | confirmation busy | stay in list | “已归档” + Undo when honest | dialog remains + retry | next item | PRODUCT.md |
 | Permanent delete | 删除 | danger confirmation + stable busy action | stay in owning view | “已永久删除” toast | dialog remains + inline retry error | owning view heading | PRODUCT.md |
+| Delete learning domain | 领域编辑器“删除” | confirmation names cognition/note/log counts | stay on Learning and select remaining domain | “学习领域已永久删除” toast | editor + dialog remain for retry | remaining domain / page heading | PRODUCT.md |
 | Search | 全局搜索 | local, no network wait | same view | result count status | clear/reset | input/results | PRODUCT.md |
 | Google sync | 立即同步 | persistent sync status | same view | exact import/export count | status panel + retry | sync trigger | PRODUCT.md |
 | Project subgoal | 项目卡内“创建子目标”/勾选 | stable busy action | stay in project card | “子目标已创建/已完成” toast | keep editor or prior checked state + retry | changed subgoal | PRODUCT.md |
@@ -82,7 +83,7 @@
 - Route document title policy: `{页面} — 知行台`；client view changes update the title。
 - Route error / 403 page behavior: keep product identity and offer sign-in/home path; do not disguise 403 as 404。
 - Sidebar/drawer/bottom-sheet transformation: persistent left sidebar ≥760px；mobile bottom navigation and full-width editor below。
-- Responsive record strategy: project cards use two columns on wide screens and one column on narrow screens；subgoals stay inside their owning project card；项目卡片非操作区域使用独立语义按钮打开名称、DDL 与笔记编辑，卡内操作不触发项目编辑。Idea/疑问卡片使用相同的整卡编辑入口，状态与归档按钮保持独立。领域学习在宽屏使用“认知档案 + 学习侧栏”，中窄屏转为单列；领域书架、核心认知、知识分支、阶段总结和笔记不因断点隐藏，编辑入口保持可达。
+- Responsive record strategy: project cards use two columns on wide screens and one column on narrow screens；subgoals stay inside their owning project card；项目卡片非操作区域使用独立语义按钮打开名称、DDL 与笔记编辑，卡内操作不触发项目编辑。Idea/疑问卡片使用相同的整卡编辑入口，状态与归档按钮保持独立。领域学习在宽屏使用“认知档案 + 学习侧栏”，中窄屏转为单列；领域书架始终为单排横向滑动窗口，卡片保持舒适宽度且滚动条可见，核心认知、知识分支、阶段总结和笔记不因断点隐藏，编辑与删除入口保持可达。
 - Calendar grid strategy: 周视图固定日期头与时间栏，08:00—24:00 由同一连续比例轴定位；所有屏幕使用舒适日列宽的横向窗口，仅在首次进入周视图时定位到今天，之后保留用户的自由滚动位置且不启用列吸附；时间网格拥有横向和纵向滚动，不裁切日期或事件。
 - Agenda strategy: 议程分成“待完成任务”和“未来日程”两个语义分组。前者只显示 `status !== done` 且存在 DDL 的 task（包括项目子目标），并允许完成、编辑和删除；后者只显示 `endAt >= now` 的站内或 Google 日程，并沿用编辑、归档和删除。已结束的 routine/历史时间记录只保留在日历视图，不进入议程；两组都按时间升序完整呈现，不做固定条数截断。
 - Focus restoration: modal/drawer returns focus to trigger; sticky controls use scroll-margin and safe-area padding。

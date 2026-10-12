@@ -931,7 +931,8 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
           }}
           onSubmit={createItem}
           onDelete={
-            editorTargetId && (editor === "event" || editor === "project")
+            editorTargetId &&
+            (editor === "event" || editor === "project" || editor === "domain")
               ? () => {
                   if (editor === "event") {
                     const item = snapshot?.events.find(
@@ -947,7 +948,7 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
                             ? "该日程将同时从 Google Calendar 和知行台永久删除，且无法恢复。"
                             : "该日程将从知行台永久删除，且无法恢复。",
                       });
-                  } else {
+                  } else if (editor === "project") {
                     const item = snapshot?.projects.find(
                       (project) => project.id === editorTargetId,
                     );
@@ -961,6 +962,26 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
                         id: item.id,
                         title: item.title,
                         description: `该项目及其 ${childCount} 个子目标将被永久删除；关联的 Ideas 会保留并取消项目关联。此操作无法恢复。`,
+                      });
+                    }
+                  } else {
+                    const item = snapshot?.domains.find(
+                      (domain) => domain.id === editorTargetId,
+                    );
+                    if (item) {
+                      const knowledgeCount =
+                        snapshot?.knowledgeNotes.filter(
+                          (note) => note.domainId === item.id,
+                        ).length ?? 0;
+                      const logCount =
+                        snapshot?.learningLogs.filter(
+                          (log) => log.domainId === item.id,
+                        ).length ?? 0;
+                      requestDelete({
+                        entity: "domain",
+                        id: item.id,
+                        title: item.title,
+                        description: `该领域及其 ${knowledgeCount} 条认知与笔记、${logCount} 条学习记录将被永久删除；关联的任务与 Ideas 会保留并取消领域关联。此操作无法恢复。`,
                       });
                     }
                   }
@@ -2139,7 +2160,12 @@ function LearningView({
             </div>
             <span>{domains.length} 个领域</span>
           </div>
-          <div className="domain-shelf">
+          <div
+            className="domain-shelf"
+            role="region"
+            aria-label={`领域书架，共 ${domains.length} 个领域，可横向滚动`}
+            tabIndex={0}
+          >
             {domains.map((domain) => {
               const domainKnowledge = notes.filter(
                 (note) => note.domainId === domain.id && note.kind !== "note",

@@ -86,7 +86,13 @@ export async function DELETE(request: Request) {
           break;
         }
         case "domain":
-          await db.delete(domains).where(eq(domains.id, body.id));
+          await db.batch([
+            db.delete(knowledgeNotes).where(eq(knowledgeNotes.domainId, body.id)),
+            db.delete(learningLogs).where(eq(learningLogs.domainId, body.id)),
+            db.update(tasks).set({ domainId: null, updatedAt }).where(eq(tasks.domainId, body.id)),
+            db.update(ideas).set({ domainId: null, updatedAt }).where(eq(ideas.domainId, body.id)),
+            db.delete(domains).where(eq(domains.id, body.id)),
+          ]);
           break;
         case "idea":
           await db.delete(ideas).where(eq(ideas.id, body.id));
