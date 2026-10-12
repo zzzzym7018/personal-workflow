@@ -100,8 +100,11 @@ test("calendar grids open the shared event editor with time defaults", async () 
   assert.match(styles, /\.week-day-create-layer:focus-visible/);
   assert.match(styles, /\.week-calendar-body \{[^}]*height: 1024px/);
   assert.match(styles, /\.week-calendar-canvas \{[^}]*min-width: 1546px/);
-  assert.match(styles, /\.week-calendar-scroll \{[^}]*scroll-snap-type: x proximity/);
+  assert.doesNotMatch(styles, /scroll-snap-type|scroll-snap-align/);
   assert.match(client, /scrollArea\.scrollLeft = Math\.max/);
+  assert.match(client, /const hasPositionedRef = useRef\(false\)/);
+  assert.match(client, /useLayoutEffect\(\(\) => \{/);
+  assert.match(client, /if \(!scrollArea \|\| hasPositionedRef\.current\) return/);
 });
 
 test("projects own checkable subgoals while calendar events stay independent", async () => {

@@ -6,7 +6,14 @@ import type {
   KeyboardEvent as ReactKeyboardEvent,
   MouseEvent as ReactMouseEvent,
 } from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 type ViewKey =
   | "today"
@@ -1482,12 +1489,14 @@ function WeekCalendar({
   const hours = Array.from({ length: 17 }, (_, index) => index + 8);
   const now = useCurrentTime();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const hasPositionedRef = useRef(false);
   const currentPosition = nowPosition(now);
   const todayIndex = days.findIndex((day) => day.isToday);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const scrollArea = scrollRef.current;
-    if (!scrollArea) return;
+    if (!scrollArea || hasPositionedRef.current) return;
+    hasPositionedRef.current = true;
     const minute = Math.max(
       8 * 60,
       Math.min(24 * 60, shanghaiClockMinutes(new Date())),

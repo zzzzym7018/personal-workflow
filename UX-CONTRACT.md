@@ -83,7 +83,7 @@
 - Route error / 403 page behavior: keep product identity and offer sign-in/home path; do not disguise 403 as 404。
 - Sidebar/drawer/bottom-sheet transformation: persistent left sidebar ≥760px；mobile bottom navigation and full-width editor below。
 - Responsive record strategy: project cards use two columns on wide screens and one column on narrow screens；subgoals stay inside their owning project card；项目卡片非操作区域使用独立语义按钮打开名称、DDL 与笔记编辑，卡内操作不触发项目编辑。Idea/疑问卡片使用相同的整卡编辑入口，状态与归档按钮保持独立。领域学习在宽屏使用“认知档案 + 学习侧栏”，中窄屏转为单列；领域书架、核心认知、知识分支、阶段总结和笔记不因断点隐藏，编辑入口保持可达。
-- Calendar grid strategy: 周视图固定日期头与时间栏，08:00—24:00 由同一连续比例轴定位；所有屏幕使用舒适日列宽的横向窗口并默认定位到今天，时间网格拥有横向和纵向滚动，不裁切日期或事件。
+- Calendar grid strategy: 周视图固定日期头与时间栏，08:00—24:00 由同一连续比例轴定位；所有屏幕使用舒适日列宽的横向窗口，仅在首次进入周视图时定位到今天，之后保留用户的自由滚动位置且不启用列吸附；时间网格拥有横向和纵向滚动，不裁切日期或事件。
 - Focus restoration: modal/drawer returns focus to trigger; sticky controls use scroll-margin and safe-area padding。
 
 ## Overlays and feedback
