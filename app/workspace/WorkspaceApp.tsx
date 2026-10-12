@@ -2021,30 +2021,17 @@ function ProjectsView({
                     >
                       ×
                     </button>
-                    <div
-                      className="project-subgoal-status"
-                      role="group"
-                      aria-label={`设置子目标「${task.title}」的状态`}
-                    >
-                      {subgoalStatuses.map((status) => (
-                        <button
-                          key={status.value}
-                          className={`project-subgoal-status-button is-${status.value}`}
-                          type="button"
-                          aria-pressed={task.status === status.value}
-                          onClick={() =>
-                            onUpdate(
-                              "task",
-                              task.id,
-                              { status: status.value },
-                              `子目标已设为${status.label}`,
-                            )
-                          }
-                        >
-                          {status.label}
-                        </button>
-                      ))}
-                    </div>
+                    <SubgoalStatusPicker
+                      task={task}
+                      onChange={(status) =>
+                        onUpdate(
+                          "task",
+                          task.id,
+                          { status: status.value },
+                          `子目标已设为${status.label}`,
+                        )
+                      }
+                    />
                   </div>
                 ))
               ) : (
@@ -2081,6 +2068,92 @@ function ProjectsView({
           </section>
         )}
       </div>
+    </div>
+  );
+}
+
+function SubgoalStatusPicker({
+  task,
+  onChange,
+}: {
+  task: Task;
+  onChange: (status: (typeof subgoalStatuses)[number]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const currentStatus =
+    subgoalStatuses.find((status) => status.value === task.status) ??
+    subgoalStatuses[0];
+  const optionsId = `subgoal-status-options-${task.id}`;
+
+  useEffect(() => {
+    if (!open) return;
+
+    const closeOnOutsidePress = (event: PointerEvent) => {
+      if (
+        event.target instanceof Node &&
+        !rootRef.current?.contains(event.target)
+      ) {
+        setOpen(false);
+      }
+    };
+    const closeOnEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setOpen(false);
+      triggerRef.current?.focus();
+    };
+
+    document.addEventListener("pointerdown", closeOnOutsidePress);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsidePress);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
+  return (
+    <div
+      className={`project-subgoal-status-picker ${open ? "is-open" : ""}`}
+      ref={rootRef}
+    >
+      <button
+        className={`project-subgoal-status-trigger is-${currentStatus.value}`}
+        type="button"
+        ref={triggerRef}
+        aria-expanded={open}
+        aria-controls={optionsId}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <span className="project-subgoal-status-dot" aria-hidden="true" />
+        <span>{currentStatus.label}</span>
+        <span className="project-subgoal-status-chevron" aria-hidden="true" />
+      </button>
+      {open ? (
+        <div
+          id={optionsId}
+          className="project-subgoal-status-options"
+          role="group"
+          aria-label={`设置子目标「${task.title}」的状态`}
+        >
+          {subgoalStatuses.map((status) => (
+            <button
+              key={status.value}
+              className={`project-subgoal-status-option is-${status.value}`}
+              type="button"
+              aria-pressed={task.status === status.value}
+              onClick={() => {
+                setOpen(false);
+                triggerRef.current?.focus();
+                if (task.status !== status.value) onChange(status);
+              }}
+            >
+              <span className="project-subgoal-status-dot" aria-hidden="true" />
+              {status.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
