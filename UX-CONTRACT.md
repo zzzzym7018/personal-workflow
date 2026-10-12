@@ -75,7 +75,7 @@
 | Delete learning domain | 领域编辑器“删除” | confirmation names cognition/note/log counts | stay on Learning and select remaining domain | “学习领域已永久删除” toast | editor + dialog remain for retry | remaining domain / page heading | PRODUCT.md |
 | Search | 全局搜索 | local, no network wait | same view | result count status | clear/reset | input/results | PRODUCT.md |
 | Google sync | 立即同步 | persistent sync status | same view | exact import/export count | status panel + retry | sync trigger | PRODUCT.md |
-| Project subgoal | 项目卡内“创建子目标”/勾选 | stable busy action | stay in project card | “子目标已创建/已完成” toast | keep editor or prior checked state + retry | changed subgoal | PRODUCT.md |
+| Project subgoal | 项目卡内“创建子目标”/三态状态控制 | stable busy action | stay in project card | “子目标已创建/已设为…” toast | keep editor or prior status + retry | changed subgoal | PRODUCT.md |
 | Cancel/back | 取消/返回 | none | originating context | none | unsaved dialog if needed | trigger | PRODUCT.md |
 
 ## Navigation and responsive behavior

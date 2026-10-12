@@ -128,8 +128,8 @@ test("agenda separates unfinished DDL tasks from future calendar events", async 
   assert.match(styles, /@media \(max-width: 880px\)[\s\S]*\.agenda-groups \{ grid-template-columns: 1fr/);
 });
 
-test("projects own checkable subgoals while calendar events stay independent", async () => {
-  const [client, api, google, migration] = await Promise.all([
+test("projects own three-state subgoals while calendar events stay independent", async () => {
+  const [client, api, google, migration, styles] = await Promise.all([
     readFile(new URL("../app/workspace/WorkspaceApp.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/api/workspace/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/lib/google-calendar.ts", import.meta.url), "utf8"),
@@ -140,10 +140,17 @@ test("projects own checkable subgoals while calendar events stay independent", a
       ),
       "utf8",
     ),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
   ]);
   assert.match(client, /onCreateSubgoal=\{\(projectId\)/);
   assert.match(client, /className="project-subgoal-row"/);
-  assert.match(client, /checked=\{task\.status === "done"\}/);
+  assert.match(client, /\{ value: "todo", label: "未开启" \}/);
+  assert.match(client, /\{ value: "doing", label: "进行中" \}/);
+  assert.match(client, /\{ value: "done", label: "已完成" \}/);
+  assert.match(client, /aria-pressed=\{task\.status === status\.value\}/);
+  assert.match(client, /\{ status: status\.value \}/);
+  assert.match(styles, /\.project-subgoal-status-button\.is-doing\[aria-pressed="true"\]/);
+  assert.match(styles, /\.project-subgoal-status-button\.is-done\[aria-pressed="true"\]/);
   assert.match(client, /function openProjectEditor\(project: Project\)/);
   assert.match(client, /onEdit=\{openProjectEditor\}/);
   assert.match(client, /id=\{`project-edit-\$\{project\.id\}`\}/);

@@ -182,6 +182,12 @@ const stageLabels = [
   "可以应用或输出",
 ];
 
+const subgoalStatuses = [
+  { value: "todo", label: "未开启" },
+  { value: "doing", label: "进行中" },
+  { value: "done", label: "已完成" },
+] as const;
+
 export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
   const [activeView, setActiveView] = useState<ViewKey>("today");
   const [navigationReady, setNavigationReady] = useState(false);
@@ -2002,23 +2008,6 @@ function ProjectsView({
               {subgoals.length ? (
                 subgoals.map((task) => (
                   <div className="project-subgoal-row" key={task.id}>
-                    <input
-                      type="checkbox"
-                      aria-label={`${task.status === "done" ? "重新打开" : "完成"} ${task.title}`}
-                      checked={task.status === "done"}
-                      onChange={() =>
-                        onUpdate(
-                          "task",
-                          task.id,
-                          {
-                            status: task.status === "done" ? "todo" : "done",
-                          },
-                          task.status === "done"
-                            ? "子目标已重新打开"
-                            : "子目标已完成",
-                        )
-                      }
-                    />
                     <span className={task.status === "done" ? "is-done" : ""}>
                       {task.title}
                     </span>
@@ -2032,6 +2021,30 @@ function ProjectsView({
                     >
                       ×
                     </button>
+                    <div
+                      className="project-subgoal-status"
+                      role="group"
+                      aria-label={`设置子目标「${task.title}」的状态`}
+                    >
+                      {subgoalStatuses.map((status) => (
+                        <button
+                          key={status.value}
+                          className={`project-subgoal-status-button is-${status.value}`}
+                          type="button"
+                          aria-pressed={task.status === status.value}
+                          onClick={() =>
+                            onUpdate(
+                              "task",
+                              task.id,
+                              { status: status.value },
+                              `子目标已设为${status.label}`,
+                            )
+                          }
+                        >
+                          {status.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 ))
               ) : (
