@@ -355,6 +355,20 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
     });
   }
 
+  function openTaskEditor(task: Task) {
+    editorReturnFocusIdRef.current = `agenda-task-${task.id}`;
+    setEditor("task");
+    setEditorTargetId(task.id);
+    setEditorError("");
+    setDraft({
+      title: task.title,
+      dueDate: task.dueDate ?? "",
+      projectId: task.projectId ?? "",
+      domainId: task.domainId ?? "",
+      note: task.notes,
+    });
+  }
+
   function openProjectEditor(project: Project) {
     editorReturnFocusIdRef.current = `project-edit-${project.id}`;
     setEditor("project");
@@ -742,8 +756,19 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
               {activeView === "calendar" ? (
                 <CalendarView
                   events={snapshot.events}
+                  tasks={snapshot.tasks}
+                  projects={snapshot.projects}
                   onCreate={(defaults) => openEditor("event", defaults)}
                   onEdit={openEventEditor}
+                  onEditTask={openTaskEditor}
+                  onToggleTask={(task) =>
+                    updateItem(
+                      "task",
+                      task.id,
+                      { status: "done" },
+                      "任务已完成",
+                    )
+                  }
                   onArchive={(item) =>
                     setArchiveTarget({
                       entity: "event",
@@ -760,6 +785,16 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
                         item.externalCalendarId && item.externalId
                           ? "该日程将同时从 Google Calendar 和知行台永久删除，且无法恢复。"
                           : "该日程将从知行台永久删除，且无法恢复。",
+                    })
+                  }
+                  onDeleteTask={(task) =>
+                    requestDelete({
+                      entity: "task",
+                      id: task.id,
+                      title: task.title,
+                      description: task.projectId
+                        ? "该子目标将从所属项目中永久删除，且无法恢复。"
+                        : "该任务将被永久删除，且无法恢复。",
                     })
                   }
                   googleStatus={googleStatus}
@@ -1399,19 +1434,29 @@ function Timeline({
 
 function CalendarView({
   events,
+  tasks,
+  projects,
   onCreate,
   onEdit,
+  onEditTask,
+  onToggleTask,
   onArchive,
   onDelete,
+  onDeleteTask,
   googleStatus,
   onSync,
   syncing,
 }: {
   events: CalendarEvent[];
+  tasks: Task[];
+  projects: Project[];
   onCreate: (defaults?: EditorDraft) => void;
   onEdit: (event: CalendarEvent) => void;
+  onEditTask: (task: Task) => void;
+  onToggleTask: (task: Task) => void;
   onArchive: (event: CalendarEvent) => void;
   onDelete: (event: CalendarEvent) => void;
+  onDeleteTask: (task: Task) => void;
   googleStatus: GoogleStatus | null;
   onSync: () => void;
   syncing: boolean;
@@ -1466,9 +1511,14 @@ function CalendarView({
       ) : (
         <AgendaList
           events={events}
+          tasks={tasks}
+          projects={projects}
           onEdit={onEdit}
+          onEditTask={onEditTask}
+          onToggleTask={onToggleTask}
           onArchive={onArchive}
           onDelete={onDelete}
+          onDeleteTask={onDeleteTask}
         />
       )}
     </div>
@@ -1656,27 +1706,128 @@ function WeekCalendar({
 
 function AgendaList({
   events,
+  tasks,
+  projects,
   onEdit,
+  onEditTask,
+  onToggleTask,
   onArchive,
   onDelete,
+  onDeleteTask,
 }: {
   events: CalendarEvent[];
+  tasks: Task[];
+  projects: Project[];
   onEdit: (event: CalendarEvent) => void;
+  onEditTask: (task: Task) => void;
+  onToggleTask: (task: Task) => void;
   onArchive: (event: CalendarEvent) => void;
   onDelete: (event: CalendarEvent) => void;
+  onDeleteTask: (task: Task) => void;
 }) {
+  const now = useCurrentTime();
+  const todayKey = localDateKey(new Date(now));
+  const pendingTasks = tasks
+    .filter((task) => task.status !== "done" && task.dueDate)
+    .sort((left, right) =>
+      (left.dueDate ?? "").localeCompare(right.dueDate ?? ""),
+    );
+  const upcomingEvents = events.filter(
+    (event) => new Date(event.endAt).getTime() >= now,
+  );
+  const projectNames = new Map(
+    projects.map((project) => [project.id, project.title]),
+  );
+  const agendaCount = pendingTasks.length + upcomingEvents.length;
+
   return (
     <section className="panel agenda-panel">
       <div className="panel-heading">
-        <h2>接下来的日程</h2>
-        <span>{events.length} 项</span>
+        <div>
+          <p className="eyebrow">AGENDA</p>
+          <h2>接下来要处理的事</h2>
+        </div>
+        <span>{agendaCount} 项</span>
       </div>
-      {events.length ? (
-        <div className="agenda-list">
-          {events.slice(0, 30).map((event) => (
+      <p className="agenda-description">
+        这里只汇总未完成且设有 DDL 的任务，以及尚未结束的未来日程；普通时间记录仍留在周视图中。
+      </p>
+      <div className="agenda-groups">
+        <section className="agenda-group" aria-labelledby="agenda-task-heading">
+          <div className="agenda-group-heading">
+            <div>
+              <span className="agenda-kind agenda-kind--task">TASK</span>
+              <h3 id="agenda-task-heading">待完成任务</h3>
+            </div>
+            <span>{pendingTasks.length} 项</span>
+          </div>
+          {pendingTasks.length ? (
+            <div className="agenda-list">
+              {pendingTasks.map((task) => {
+                const overdue = (task.dueDate ?? "") < todayKey;
+                return (
+                  <article
+                    key={task.id}
+                    className={`agenda-row agenda-row--task ${overdue ? "is-overdue" : ""}`}
+                  >
+                    <time dateTime={task.dueDate ?? undefined}>
+                      <strong>{formatShortDate(task.dueDate ?? "")}</strong>
+                      <span>{overdue ? "已逾期" : "截止"}</span>
+                    </time>
+                    <input
+                      className="agenda-check"
+                      type="checkbox"
+                      aria-label={`完成任务 ${task.title}`}
+                      checked={false}
+                      onChange={() => onToggleTask(task)}
+                    />
+                    <button
+                      id={`agenda-task-${task.id}`}
+                      className="agenda-open"
+                      type="button"
+                      onClick={() => onEditTask(task)}
+                    >
+                      <strong>{task.title}</strong>
+                      <span>
+                        {task.projectId
+                          ? projectNames.get(task.projectId) ?? "项目子目标"
+                          : "独立任务"}
+                      </span>
+                    </button>
+                    <div className="row-actions">
+                      <button
+                        className="row-action row-action--delete"
+                        type="button"
+                        aria-label={`删除任务 ${task.title}`}
+                        title="删除"
+                        onClick={() => onDeleteTask(task)}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="agenda-empty">没有未完成且设有 DDL 的任务。</p>
+          )}
+        </section>
+
+        <section className="agenda-group" aria-labelledby="agenda-event-heading">
+          <div className="agenda-group-heading">
+            <div>
+              <span className="agenda-kind agenda-kind--event">CALENDAR</span>
+              <h3 id="agenda-event-heading">未来日程</h3>
+            </div>
+            <span>{upcomingEvents.length} 项</span>
+          </div>
+          {upcomingEvents.length ? (
+            <div className="agenda-list">
+              {upcomingEvents.map((event) => (
             <article key={event.id} className="agenda-row">
-              <time>
-                {formatMonthDay(event.startAt)}
+              <time dateTime={event.startAt}>
+                <strong>{formatMonthDay(event.startAt)}</strong>
                 <strong>{formatTime(event.startAt)}</strong>
               </time>
               <span
@@ -1712,14 +1863,13 @@ function AgendaList({
                 </button>
               </div>
             </article>
-          ))}
-        </div>
-      ) : (
-        <EmptyState
-          title="还没有日程"
-          description="创建一个日程，把计划变成时间承诺。"
-        />
-      )}
+              ))}
+            </div>
+          ) : (
+            <p className="agenda-empty">目前没有尚未结束的未来日程。</p>
+          )}
+        </section>
+      </div>
     </section>
   );
 }

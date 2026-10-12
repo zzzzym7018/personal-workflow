@@ -107,6 +107,27 @@ test("calendar grids open the shared event editor with time defaults", async () 
   assert.match(client, /if \(!scrollArea \|\| hasPositionedRef\.current\) return/);
 });
 
+test("agenda separates unfinished DDL tasks from future calendar events", async () => {
+  const [client, api, styles] = await Promise.all([
+    readFile(new URL("../app/workspace/WorkspaceApp.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/workspace/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+  assert.match(client, /tasks=\{snapshot\.tasks\}/);
+  assert.match(client, /task\.status !== "done" && task\.dueDate/);
+  assert.match(client, /new Date\(event\.endAt\)\.getTime\(\) >= now/);
+  assert.match(client, /待完成任务/);
+  assert.match(client, /未来日程/);
+  assert.match(client, /没有未完成且设有 DDL 的任务/);
+  assert.match(client, /目前没有尚未结束的未来日程/);
+  assert.match(client, /function openTaskEditor\(task: Task\)/);
+  assert.match(client, /onChange=\{\(\) => onToggleTask\(task\)\}/);
+  assert.doesNotMatch(client, /events\.slice\(0, 30\)/);
+  assert.match(api, /data\.notes !== undefined \|\| data\.note !== undefined/);
+  assert.match(styles, /\.agenda-groups \{[^}]*grid-template-columns: repeat\(2/);
+  assert.match(styles, /@media \(max-width: 880px\)[\s\S]*\.agenda-groups \{ grid-template-columns: 1fr/);
+});
+
 test("projects own checkable subgoals while calendar events stay independent", async () => {
   const [client, api, google, migration] = await Promise.all([
     readFile(new URL("../app/workspace/WorkspaceApp.tsx", import.meta.url), "utf8"),

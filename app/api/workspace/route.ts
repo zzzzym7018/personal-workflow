@@ -162,7 +162,7 @@ async function updateEntity(entity: EntityName, id: string, data: JsonRecord) {
       await db.update(projects).set(patch).where(eq(projects.id, id)); return { id, ...patch };
     }
     case "task": {
-      const patch = { ...(data.title !== undefined ? { title: requiredText(data.title, "请填写任务名称。") } : {}), ...(data.status !== undefined ? { status: optionalText(data.status) } : {}), ...(data.notes !== undefined ? { notes: optionalText(data.notes) } : {}), ...(data.projectId !== undefined ? { projectId: nullableText(data.projectId) } : {}), ...(data.domainId !== undefined ? { domainId: nullableText(data.domainId) } : {}), ...(data.dueDate !== undefined ? { dueDate: nullableText(data.dueDate) } : {}), updatedAt };
+      const patch = { ...(data.title !== undefined ? { title: requiredText(data.title, "请填写任务名称。") } : {}), ...(data.status !== undefined ? { status: optionalText(data.status) } : {}), ...(data.notes !== undefined || data.note !== undefined ? { notes: optionalText(data.notes ?? data.note) } : {}), ...(data.projectId !== undefined ? { projectId: nullableText(data.projectId) } : {}), ...(data.domainId !== undefined ? { domainId: nullableText(data.domainId) } : {}), ...(data.dueDate !== undefined ? { dueDate: nullableText(data.dueDate) } : {}), updatedAt };
       await db.update(tasks).set(patch).where(eq(tasks.id, id)); return { id, ...patch };
     }
     case "domain": {
