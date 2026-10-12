@@ -154,8 +154,11 @@ test("projects own three-state subgoals while calendar events stay independent",
   assert.match(client, /aria-pressed=\{task\.status === status\.value\}/);
   assert.match(client, /\{ status: status\.value \}/);
   assert.match(styles, /\.project-subgoal-status-trigger\.is-doing/);
-  assert.match(styles, /\.project-subgoal-status-option\.is-doing\[aria-pressed="true"\]/);
-  assert.match(styles, /\.project-subgoal-status-option\.is-done\[aria-pressed="true"\]/);
+  assert.match(styles, /grid-template-areas: "title status due delete"/);
+  assert.match(styles, /\.project-subgoal-status-options \{ position: absolute/);
+  assert.match(styles, /\.project-subgoal-status-option\[aria-pressed="true"\]/);
+  assert.match(styles, /\.project-subgoal-status-option\.is-doing \.project-subgoal-status-dot/);
+  assert.match(styles, /\.project-subgoal-status-option\.is-done \.project-subgoal-status-dot/);
   assert.match(client, /function openProjectEditor\(project: Project\)/);
   assert.match(client, /onEdit=\{openProjectEditor\}/);
   assert.match(client, /id=\{`project-edit-\$\{project\.id\}`\}/);
