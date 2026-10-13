@@ -1160,7 +1160,7 @@ function TodayView({
         />
       </section>
       <aside className="context-column">
-        <section className="panel compact-panel">
+        <section className="panel compact-panel context-panel context-panel--tasks">
           <div className="panel-heading">
             <div>
               <p className="eyebrow">TODAY</p>
@@ -1233,7 +1233,7 @@ function TodayView({
             )}
           </div>
         </section>
-        <section className="panel compact-panel">
+        <section className="panel compact-panel context-panel context-panel--projects">
           <div className="panel-heading">
             <h2>推进中的项目</h2>
             <button
@@ -1258,7 +1258,7 @@ function TodayView({
             ))}
           </div>
         </section>
-        <section className="panel compact-panel">
+        <section className="panel compact-panel context-panel context-panel--learning">
           <div className="panel-heading">
             <h2>领域学习</h2>
             <button
@@ -1283,7 +1283,7 @@ function TodayView({
             ))}
           </div>
         </section>
-        <section className="panel compact-panel question-panel">
+        <section className="panel compact-panel context-panel context-panel--questions question-panel">
           <div className="panel-heading">
             <h2>待探索的问题</h2>
             <button
@@ -1515,7 +1515,7 @@ function CalendarView({
   const days = weekDays(new Date());
   return (
     <div className="page-stack page-enter">
-      <section className="page-intro">
+      <section className="page-intro page-intro--calendar">
         <div>
           <p className="eyebrow">CALENDAR</p>
           <h2>把承诺放进时间，而不是留在列表里</h2>
@@ -1952,7 +1952,7 @@ function ProjectsView({
 }) {
   return (
     <div className="page-stack page-enter">
-      <section className="page-intro">
+      <section className="page-intro page-intro--projects">
         <div>
           <p className="eyebrow">PROJECTS</p>
           <h2>把大型工程拆成可以完成的子目标</h2>
@@ -2070,13 +2070,7 @@ function ProjectsView({
                   ? `截止 ${formatShortDate(project.deadline)}`
                   : "未设置截止日期"}
               </span>
-              <button
-                className="button button--outline"
-                type="button"
-                onClick={() => onCreateSubgoal(project.id)}
-              >
-                创建子目标
-              </button>
+              <span className="project-edit-hint">点击卡片编辑项目详情</span>
             </footer>
           </article>
           );
@@ -2236,7 +2230,7 @@ function LearningView({
 
   return (
     <div className="page-stack page-enter">
-      <section className="page-intro">
+      <section className="page-intro page-intro--learning">
         <div>
           <p className="eyebrow">LEARNING DOMAINS</p>
           <h2>把学习压缩成可回顾的认知档案</h2>
@@ -2795,7 +2789,7 @@ function ReviewView({ snapshot }: { snapshot: Snapshot }) {
   );
   return (
     <div className="page-stack page-enter">
-      <section className="page-intro">
+      <section className="page-intro page-intro--review">
         <div>
           <p className="eyebrow">WEEKLY REVIEW</p>
           <h2>回顾不是打分，而是决定下周保留什么</h2>
@@ -2944,14 +2938,14 @@ function SettingsView({
   }
   return (
     <div className="settings-layout page-enter">
-      <section className="page-intro">
+      <section className="page-intro page-intro--settings">
         <div>
           <p className="eyebrow">SETTINGS</p>
           <h2>连接与隐私</h2>
           <p>管理私人访问、Google Calendar 同步范围和数据状态。</p>
         </div>
       </section>
-      <section className="panel settings-panel">
+      <section className="panel settings-panel settings-panel--calendar">
         <div className="settings-heading">
           <div>
             <span className="settings-icon" aria-hidden="true">
@@ -3048,7 +3042,7 @@ function SettingsView({
           </div>
         )}
       </section>
-      <section className="panel settings-panel">
+      <section className="panel settings-panel settings-panel--privacy">
         <div className="settings-heading">
           <div>
             <span className="settings-icon" aria-hidden="true">
@@ -3065,7 +3059,7 @@ function SettingsView({
           所有页面和数据接口都会在服务端验证登录账号。其他账号即使拥有网址，也无法读取工作台内容。
         </p>
       </section>
-      <section className="panel settings-panel">
+      <section className="panel settings-panel settings-panel--data">
         <div className="settings-heading">
           <div>
             <span className="settings-icon" aria-hidden="true">

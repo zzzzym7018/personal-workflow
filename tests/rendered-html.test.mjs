@@ -227,6 +227,25 @@ test("idea and question cards open a prefilled shared editor", async () => {
   assert.match(styles, /\.editor-title-textarea \{[^}]*min-height: 64px[^}]*max-height: 144px/);
 });
 
+test("core pages keep distinct themes and balanced desktop layouts", async () => {
+  const [client, styles] = await Promise.all([
+    readFile(new URL("../app/workspace/WorkspaceApp.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+  assert.match(client, /page-intro page-intro--calendar/);
+  assert.match(client, /page-intro page-intro--projects/);
+  assert.match(client, /page-intro page-intro--learning/);
+  assert.match(client, /page-intro page-intro--review/);
+  assert.match(client, /page-intro page-intro--settings/);
+  assert.match(client, /<div className="idea-grid">/);
+  assert.match(client, /settings-panel settings-panel--calendar/);
+  assert.match(client, /project-edit-hint/);
+  assert.doesNotMatch(client, />\s*创建子目标\s*<\/button>/);
+  assert.match(styles, /\.page-intro--calendar::before/);
+  assert.match(styles, /\.idea-grid \{[^}]*grid-template-columns: repeat\(3/);
+  assert.match(styles, /\.settings-layout \{[^}]*grid-template-columns: repeat\(2/);
+});
+
 test("learning uses editable cognitive records and scoped notes", async () => {
   const [client, api, database, schema, styles, migration] = await Promise.all([
     readFile(new URL("../app/workspace/WorkspaceApp.tsx", import.meta.url), "utf8"),
