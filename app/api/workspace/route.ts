@@ -126,7 +126,7 @@ async function createEntity(entity: EntityName, data: JsonRecord) {
       await db.insert(projects).values(row); return row;
     }
     case "task": {
-      const row = { id, title, notes: optionalText(data.notes ?? data.note), status: optionalText(data.status) || "todo", priority: optionalText(data.priority) || "normal", projectId: nullableText(data.projectId), domainId: nullableText(data.domainId), dueDate: nullableText(data.dueDate), startAt: nullableText(data.startAt), endAt: nullableText(data.endAt), archivedAt: null, createdAt: now, updatedAt: now };
+      const row = { id, title, notes: optionalText(data.notes ?? data.note), status: optionalText(data.status) || "todo", priority: optionalText(data.priority) || "normal", projectId: nullableText(data.projectId), domainId: nullableText(data.domainId), plannedDate: nullableText(data.plannedDate), dueDate: nullableText(data.dueDate), startAt: nullableText(data.startAt), endAt: nullableText(data.endAt), archivedAt: null, createdAt: now, updatedAt: now };
       await db.insert(tasks).values(row); return row;
     }
     case "domain": {
@@ -168,7 +168,7 @@ async function updateEntity(entity: EntityName, id: string, data: JsonRecord) {
       await db.update(projects).set(patch).where(eq(projects.id, id)); return { id, ...patch };
     }
     case "task": {
-      const patch = { ...(data.title !== undefined ? { title: requiredText(data.title, "请填写任务名称。") } : {}), ...(data.status !== undefined ? { status: optionalText(data.status) } : {}), ...(data.notes !== undefined || data.note !== undefined ? { notes: optionalText(data.notes ?? data.note) } : {}), ...(data.projectId !== undefined ? { projectId: nullableText(data.projectId) } : {}), ...(data.domainId !== undefined ? { domainId: nullableText(data.domainId) } : {}), ...(data.dueDate !== undefined ? { dueDate: nullableText(data.dueDate) } : {}), updatedAt };
+      const patch = { ...(data.title !== undefined ? { title: requiredText(data.title, "请填写任务名称。") } : {}), ...(data.status !== undefined ? { status: optionalText(data.status) } : {}), ...(data.notes !== undefined || data.note !== undefined ? { notes: optionalText(data.notes ?? data.note) } : {}), ...(data.projectId !== undefined ? { projectId: nullableText(data.projectId) } : {}), ...(data.domainId !== undefined ? { domainId: nullableText(data.domainId) } : {}), ...(data.plannedDate !== undefined ? { plannedDate: nullableText(data.plannedDate) } : {}), ...(data.dueDate !== undefined ? { dueDate: nullableText(data.dueDate) } : {}), updatedAt };
       await db.update(tasks).set(patch).where(eq(tasks.id, id)); return { id, ...patch };
     }
     case "domain": {

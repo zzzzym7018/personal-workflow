@@ -52,6 +52,7 @@ type Task = {
   notes: string;
   status: string;
   priority: string;
+  plannedDate: string | null;
   dueDate: string | null;
   startAt: string | null;
   endAt: string | null;
@@ -337,6 +338,7 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
       type: entity === "idea" ? "idea" : "",
       kind: entity === "knowledgeNote" ? "insight" : "",
       date,
+      plannedDate: entity === "task" ? date : "",
       dueDate: entity === "task" ? date : "",
       start: "09:00",
       end: "10:00",
@@ -368,6 +370,7 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
     setEditorError("");
     setDraft({
       title: task.title,
+      plannedDate: task.plannedDate ?? task.dueDate ?? "",
       dueDate: task.dueDate ?? "",
       projectId: task.projectId ?? "",
       domainId: task.domainId ?? "",
@@ -818,7 +821,11 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
                   onCreate={() => openEditor("project")}
                   onEdit={openProjectEditor}
                   onCreateSubgoal={(projectId) =>
-                    openEditor("task", { projectId, dueDate: "" })
+                    openEditor("task", {
+                      projectId,
+                      plannedDate: "",
+                      dueDate: "",
+                    })
                   }
                   onUpdate={updateItem}
                   onArchive={(item) =>
@@ -1088,7 +1095,7 @@ function TodayView({
   const now = useCurrentTime();
   const todayTasks = snapshot.tasks.filter(
     (task) =>
-      task.dueDate === todayKey ||
+      (task.plannedDate ?? task.dueDate) === todayKey ||
       (task.startAt && localDateKey(new Date(task.startAt)) === todayKey),
   );
   const currentEvent = todayEvents.find(
@@ -3409,13 +3416,36 @@ function EditorDialog({
                   </strong>
                 </div>
               ) : null}
-              <TypedField
-                id="task-date"
-                label={draft.projectId ? "子目标 DDL" : "任务 DDL"}
-                hint="YYYY-MM-DD，可选"
-                value={draft.dueDate ?? ""}
-                onChange={(value) => setDraft({ ...draft, dueDate: value })}
-              />
+              {draft.projectId ? (
+                <TypedField
+                  id="task-due-date"
+                  label="子目标 DDL"
+                  hint="YYYY-MM-DD，可选"
+                  value={draft.dueDate ?? ""}
+                  onChange={(value) => setDraft({ ...draft, dueDate: value })}
+                />
+              ) : (
+                <div className="field-row">
+                  <TypedField
+                    id="task-planned-date"
+                    label="行动日期"
+                    hint="在哪天的行动栏显示"
+                    value={draft.plannedDate ?? ""}
+                    onChange={(value) =>
+                      setDraft({ ...draft, plannedDate: value })
+                    }
+                  />
+                  <TypedField
+                    id="task-due-date"
+                    label="任务 DDL"
+                    hint="YYYY-MM-DD，可选"
+                    value={draft.dueDate ?? ""}
+                    onChange={(value) =>
+                      setDraft({ ...draft, dueDate: value })
+                    }
+                  />
+                </div>
+              )}
             </>
           ) : null}
           <div className="field-group">

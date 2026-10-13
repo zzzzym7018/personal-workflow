@@ -26,6 +26,7 @@ export const tasks = sqliteTable("tasks", {
   notes: text("notes").notNull().default(""),
   status: text("status").notNull().default("todo"),
   priority: text("priority").notNull().default("normal"),
+  plannedDate: text("planned_date"),
   dueDate: text("due_date"),
   startAt: text("start_at"),
   endAt: text("end_at"),

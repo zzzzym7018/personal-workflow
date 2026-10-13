@@ -74,14 +74,30 @@ test("event notes survive save and reopen field mapping", async () => {
   assert.match(api, /notes: optionalText\(data\.notes \?\? data\.note\)/);
 });
 
-test("new tasks persist the date shown in the editor", async () => {
-  const client = await readFile(
-    new URL("../app/workspace/WorkspaceApp.tsx", import.meta.url),
-    "utf8",
-  );
+test("task action dates stay independent from deadlines", async () => {
+  const [client, api, schema, workspaceDb, migration] = await Promise.all([
+    readFile(new URL("../app/workspace/WorkspaceApp.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/workspace/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../db/schema.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/lib/workspace-db.ts", import.meta.url), "utf8"),
+    readFile(
+      new URL("../drizzle/0004_greedy_the_professor.sql", import.meta.url),
+      "utf8",
+    ),
+  ]);
+  assert.match(client, /plannedDate: entity === "task" \? date : ""/);
   assert.match(client, /dueDate: entity === "task" \? date : ""/);
+  assert.match(client, /plannedDate: task\.plannedDate \?\? task\.dueDate \?\? ""/);
+  assert.match(client, /\(task\.plannedDate \?\? task\.dueDate\) === todayKey/);
+  assert.match(client, /id="task-planned-date"/);
+  assert.match(client, /label="行动日期"/);
   assert.match(client, /value=\{draft\.dueDate \?\? ""\}/);
   assert.doesNotMatch(client, /draft\.dueDate \?\? draft\.date/);
+  assert.match(api, /plannedDate: nullableText\(data\.plannedDate\)/);
+  assert.match(api, /data\.plannedDate !== undefined/);
+  assert.match(schema, /plannedDate: text\("planned_date"\)/);
+  assert.match(workspaceDb, /ALTER TABLE tasks ADD COLUMN planned_date TEXT/);
+  assert.match(migration, /UPDATE `tasks`[\s\S]*`planned_date`[\s\S]*`created_at`/);
 });
 
 test("calendar grids open the shared event editor with time defaults", async () => {
@@ -125,7 +141,8 @@ test("agenda separates unfinished DDL tasks from future calendar events", async 
   assert.match(client, /id=\{`today-task-\$\{task\.id\}`\}/);
   assert.match(client, /aria-label=\{`编辑任务「\$\{task\.title\}」和 DDL`\}/);
   assert.match(client, /onClick=\{\(\) => onEditTask\(task\)\}/);
-  assert.match(client, /label=\{draft\.projectId \? "子目标 DDL" : "任务 DDL"\}/);
+  assert.match(client, /label="子目标 DDL"/);
+  assert.match(client, /label="任务 DDL"/);
   assert.match(styles, /\.task-row-open \{[^}]*grid-template-columns: minmax\(0, 1fr\) 10px/);
   assert.doesNotMatch(client, /events\.slice\(0, 30\)/);
   assert.match(api, /data\.notes !== undefined \|\| data\.note !== undefined/);

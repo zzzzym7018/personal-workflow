@@ -25,7 +25,7 @@ const schemaStatements = [
   )`,
   `CREATE TABLE IF NOT EXISTS tasks (
     id TEXT PRIMARY KEY, project_id TEXT, domain_id TEXT, title TEXT NOT NULL, notes TEXT NOT NULL DEFAULT '',
-    status TEXT NOT NULL DEFAULT 'todo', priority TEXT NOT NULL DEFAULT 'normal', due_date TEXT, start_at TEXT, end_at TEXT,
+    status TEXT NOT NULL DEFAULT 'todo', priority TEXT NOT NULL DEFAULT 'normal', planned_date TEXT, due_date TEXT, start_at TEXT, end_at TEXT,
     archived_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
   )`,
   `CREATE TABLE IF NOT EXISTS domains (
@@ -69,7 +69,24 @@ const schemaStatements = [
 export async function ensureWorkspaceSchema() {
   if (!ready) {
     const runtimeEnv = env as unknown as RuntimeEnv;
-    ready = runtimeEnv.DB.batch(schemaStatements.map((sql) => runtimeEnv.DB.prepare(sql))).then(() => undefined);
+    ready = (async () => {
+      await runtimeEnv.DB.batch(
+        schemaStatements.map((sql) => runtimeEnv.DB.prepare(sql)),
+      );
+      const taskColumns = await runtimeEnv.DB.prepare(
+        "PRAGMA table_info(tasks)",
+      ).all<{ name: string }>();
+      if (!taskColumns.results.some((column) => column.name === "planned_date")) {
+        await runtimeEnv.DB.prepare(
+          "ALTER TABLE tasks ADD COLUMN planned_date TEXT",
+        ).run();
+        await runtimeEnv.DB.prepare(
+          `UPDATE tasks
+           SET planned_date = substr(datetime(created_at, '+8 hours'), 1, 10)
+           WHERE planned_date IS NULL AND project_id IS NULL`,
+        ).run();
+      }
+    })();
   }
   await ready;
 }
