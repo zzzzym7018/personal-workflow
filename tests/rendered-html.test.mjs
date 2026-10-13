@@ -149,9 +149,9 @@ test("projects own three-state subgoals while calendar events stay independent",
   ]);
   assert.match(client, /onCreateSubgoal=\{\(projectId\)/);
   assert.match(client, /className="project-subgoal-row"/);
-  assert.match(client, /\{ value: "todo", label: "未开启" \}/);
-  assert.match(client, /\{ value: "doing", label: "进行中" \}/);
-  assert.match(client, /\{ value: "done", label: "已完成" \}/);
+  assert.match(client, /\{ value: "todo", label: "未开启", icon: "○" \}/);
+  assert.match(client, /\{ value: "doing", label: "进行中", icon: "◐" \}/);
+  assert.match(client, /\{ value: "done", label: "已完成", icon: "✓" \}/);
   assert.match(client, /function SubgoalStatusPicker\(/);
   assert.match(client, /aria-expanded=\{open\}/);
   assert.match(client, /open \? \(/);
@@ -162,8 +162,8 @@ test("projects own three-state subgoals while calendar events stay independent",
   assert.match(styles, /grid-template-areas: "title status due delete"/);
   assert.match(styles, /\.project-subgoal-status-options \{ position: absolute/);
   assert.match(styles, /\.project-subgoal-status-option\[aria-pressed="true"\]/);
-  assert.match(styles, /\.project-subgoal-status-option\.is-doing \.project-subgoal-status-dot/);
-  assert.match(styles, /\.project-subgoal-status-option\.is-done \.project-subgoal-status-dot/);
+  assert.match(styles, /\.project-subgoal-status-option\.is-doing \.project-subgoal-status-icon/);
+  assert.match(styles, /\.project-subgoal-status-option\.is-done \.project-subgoal-status-icon/);
   assert.match(client, /function openProjectEditor\(project: Project\)/);
   assert.match(client, /onEdit=\{openProjectEditor\}/);
   assert.match(client, /id=\{`project-edit-\$\{project\.id\}`\}/);

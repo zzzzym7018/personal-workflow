@@ -183,9 +183,9 @@ const stageLabels = [
 ];
 
 const subgoalStatuses = [
-  { value: "todo", label: "未开启" },
-  { value: "doing", label: "进行中" },
-  { value: "done", label: "已完成" },
+  { value: "todo", label: "未开启", icon: "○" },
+  { value: "doing", label: "进行中", icon: "◐" },
+  { value: "done", label: "已完成", icon: "✓" },
 ] as const;
 
 export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
@@ -2142,7 +2142,9 @@ function SubgoalStatusPicker({
         aria-controls={optionsId}
         onClick={() => setOpen((value) => !value)}
       >
-        <span className="project-subgoal-status-dot" aria-hidden="true" />
+        <span className="project-subgoal-status-icon" aria-hidden="true">
+          {currentStatus.icon}
+        </span>
         <span>{currentStatus.label}</span>
         <span className="project-subgoal-status-chevron" aria-hidden="true" />
       </button>
@@ -2165,7 +2167,9 @@ function SubgoalStatusPicker({
                 if (task.status !== status.value) onChange(status);
               }}
             >
-              <span className="project-subgoal-status-dot" aria-hidden="true" />
+              <span className="project-subgoal-status-icon" aria-hidden="true">
+                {status.icon}
+              </span>
               {status.label}
             </button>
           ))}

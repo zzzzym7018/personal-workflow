@@ -296,16 +296,16 @@ kbd { padding: 2px 7px; border: 1px solid var(--line); border-bottom-width: 2px;
 .project-subgoal-row time { grid-area: due; color: var(--ink-muted); font-family: var(--font-mono); font-size: 9px; }
 .project-subgoal-row > .row-action { grid-area: delete; }
 .project-subgoal-status-picker { position: relative; width: fit-content; grid-area: status; }
-.project-subgoal-status-trigger { display: inline-flex; min-height: 26px; align-items: center; gap: 5px; padding: 4px 5px; border: 0; border-radius: 6px; color: #7f8b98; background: transparent; font-size: 9px; font-weight: 500; line-height: 1; transition: color 160ms ease, background 160ms ease; }
+.project-subgoal-status-trigger { display: inline-flex; min-height: 28px; align-items: center; gap: 6px; padding: 4px 6px; border: 0; border-radius: 7px; color: #74818e; background: transparent; font-size: 9px; font-weight: 600; line-height: 1; transition: color 160ms ease, background 160ms ease; }
 .project-subgoal-status-trigger:hover, .project-subgoal-status-trigger[aria-expanded="true"] { color: var(--ink); background: #f1f4f6; }
 .project-subgoal-status-trigger:focus-visible { outline-offset: 1px; }
-.project-subgoal-status-dot { width: 5px; height: 5px; flex: 0 0 5px; border: 1px solid #aab4be; border-radius: 50%; background: transparent; }
-.project-subgoal-status-trigger.is-doing .project-subgoal-status-dot, .project-subgoal-status-option.is-doing .project-subgoal-status-dot { border-color: #b58a4f; background: #b58a4f; }
-.project-subgoal-status-trigger.is-done .project-subgoal-status-dot, .project-subgoal-status-option.is-done .project-subgoal-status-dot { border-color: #669586; background: #669586; }
+.project-subgoal-status-icon { display: inline-grid; width: 15px; height: 15px; flex: 0 0 15px; place-items: center; border: 1px solid #bcc5cd; border-radius: 50%; color: #7f8b98; background: white; font-family: var(--font-sans); font-size: 10px; font-weight: 800; line-height: 1; }
+.project-subgoal-status-trigger.is-doing .project-subgoal-status-icon, .project-subgoal-status-option.is-doing .project-subgoal-status-icon { border-color: #d7b77e; color: #986b28; background: #fff6e7; }
+.project-subgoal-status-trigger.is-done .project-subgoal-status-icon, .project-subgoal-status-option.is-done .project-subgoal-status-icon { border-color: #7dac9e; color: white; background: #4f8d7d; }
 .project-subgoal-status-chevron { width: 5px; height: 5px; margin: -2px 1px 0 1px; border-right: 1px solid currentColor; border-bottom: 1px solid currentColor; opacity: 0.58; transform: rotate(45deg); transition: transform 160ms ease, margin 160ms ease; }
 .project-subgoal-status-trigger[aria-expanded="true"] .project-subgoal-status-chevron { margin: 2px 1px 0 1px; transform: rotate(225deg); }
 .project-subgoal-status-options { position: absolute; z-index: 300; top: calc(100% + 5px); right: 0; display: grid; width: 146px; gap: 1px; padding: 5px; border: 1px solid #d8e1e6; border-radius: 10px; background: white; box-shadow: 0 12px 30px rgba(23, 35, 59, 0.14); }
-.project-subgoal-status-option { display: inline-flex; min-height: 32px; align-items: center; justify-content: flex-start; gap: 7px; padding: 5px 9px; border: 0; border-radius: 7px; color: var(--ink-muted); background: transparent; font-size: 10px; font-weight: 600; line-height: 1; text-align: left; transition: color 160ms ease, background 160ms ease; }
+.project-subgoal-status-option { display: inline-flex; min-height: 36px; align-items: center; justify-content: flex-start; gap: 8px; padding: 6px 9px; border: 0; border-radius: 7px; color: var(--ink-muted); background: transparent; font-size: 10px; font-weight: 600; line-height: 1; text-align: left; transition: color 160ms ease, background 160ms ease; }
 .project-subgoal-status-option::after { margin-left: auto; color: var(--primary); content: ""; font-size: 10px; }
 .project-subgoal-status-option:hover { color: var(--ink); background: var(--surface-muted); }
 .project-subgoal-status-option[aria-pressed="true"] { color: var(--ink); background: #f3f5f8; }
