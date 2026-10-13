@@ -130,6 +130,9 @@ test("agenda separates unfinished DDL tasks from future calendar events", async 
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
   ]);
   assert.match(client, /tasks=\{snapshot\.tasks\}/);
+  assert.match(client, /onCreateTask=\{\(\) => openEditor\("task"\)\}/);
+  assert.match(client, /className="calendar-create-actions"[\s\S]*onClick=\{onCreateTask\}[\s\S]*＋ 新建任务/);
+  assert.match(client, /aria-label="新建内容"/);
   assert.match(client, /task\.status !== "done" && task\.dueDate/);
   assert.match(client, /new Date\(event\.endAt\)\.getTime\(\) >= now/);
   assert.match(client, /待完成任务/);
@@ -147,6 +150,8 @@ test("agenda separates unfinished DDL tasks from future calendar events", async 
   assert.doesNotMatch(client, /events\.slice\(0, 30\)/);
   assert.match(api, /data\.notes !== undefined \|\| data\.note !== undefined/);
   assert.match(styles, /\.agenda-groups \{[^}]*grid-template-columns: repeat\(2/);
+  assert.match(styles, /\.calendar-create-actions \{[^}]*display: flex/);
+  assert.match(styles, /@media \(max-width: 759px\)[\s\S]*\.calendar-create-actions \{[^}]*grid-template-columns: repeat\(2/);
   assert.match(styles, /@media \(max-width: 880px\)[\s\S]*\.agenda-groups \{ grid-template-columns: 1fr/);
 });
 

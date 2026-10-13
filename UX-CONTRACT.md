@@ -64,6 +64,7 @@
 | Operation | Trigger | Pending | Success destination | Success feedback | Failure recovery | Focus outcome | Source ref |
 |---|---|---|---|---|---|---|---|
 | Create | 创建 | stable busy action | stay in owning view | “已创建” toast | keep values + inline error | new item / heading | PRODUCT.md |
+| Create task from Calendar | 日程页“新建任务” | shared task editor with action date + DDL | stay on Calendar | “任务已创建” toast | keep values + inline error | “新建任务” trigger | PRODUCT.md |
 | Edit | 保存更改 | stable busy action | stay in context | “更改已保存” | keep editor + retry | edited item | PRODUCT.md |
 | Edit schedule | Time Rail 日程块 | prefilled event editor | stay on Today | “日程已更新” toast | keep values + inline error | edited time block | PRODUCT.md |
 | Edit task | 今日行动/议程任务正文 | prefilled task editor | stay in current view | “任务已更新” toast | keep editor + inline error | edited task trigger | PRODUCT.md |

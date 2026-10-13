@@ -771,6 +771,7 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
                   tasks={snapshot.tasks}
                   projects={snapshot.projects}
                   onCreate={(defaults) => openEditor("event", defaults)}
+                  onCreateTask={() => openEditor("task")}
                   onEdit={openEventEditor}
                   onEditTask={openTaskEditor}
                   onToggleTask={(task) =>
@@ -1494,6 +1495,7 @@ function CalendarView({
   tasks,
   projects,
   onCreate,
+  onCreateTask,
   onEdit,
   onEditTask,
   onToggleTask,
@@ -1508,6 +1510,7 @@ function CalendarView({
   tasks: Task[];
   projects: Project[];
   onCreate: (defaults?: EditorDraft) => void;
+  onCreateTask: () => void;
   onEdit: (event: CalendarEvent) => void;
   onEditTask: (task: Task) => void;
   onToggleTask: (task: Task) => void;
@@ -1526,7 +1529,7 @@ function CalendarView({
         <div>
           <p className="eyebrow">CALENDAR</p>
           <h2>把承诺放进时间，而不是留在列表里</h2>
-          <p>站内日程与选中的 Google 日历保持双向同步；点击周视图空白时段可快速添加。</p>
+          <p>日程记录几点到几点；任务记录行动日期与 DDL。站内日程与选中的 Google 日历保持双向同步。</p>
         </div>
         <div className="intro-actions">
           <div className="segmented" role="group" aria-label="日历视图">
@@ -1549,13 +1552,22 @@ function CalendarView({
           >
             {syncing ? "同步中…" : "同步日历"}
           </button>
-          <button
-            className="button button--primary"
-            type="button"
-            onClick={() => onCreate()}
-          >
-            ＋ 新建日程
-          </button>
+          <div className="calendar-create-actions" role="group" aria-label="新建内容">
+            <button
+              className="button button--outline"
+              type="button"
+              onClick={onCreateTask}
+            >
+              ＋ 新建任务
+            </button>
+            <button
+              className="button button--primary"
+              type="button"
+              onClick={() => onCreate()}
+            >
+              ＋ 新建日程
+            </button>
+          </div>
         </div>
       </section>
       {mode === "week" ? (
