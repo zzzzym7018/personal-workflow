@@ -361,8 +361,8 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
     });
   }
 
-  function openTaskEditor(task: Task) {
-    editorReturnFocusIdRef.current = `agenda-task-${task.id}`;
+  function openTaskEditor(task: Task, returnFocusId = `agenda-task-${task.id}`) {
+    editorReturnFocusIdRef.current = returnFocusId;
     setEditor("task");
     setEditorTargetId(task.id);
     setEditorError("");
@@ -746,6 +746,9 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
                     )
                   }
                   onOpenEditor={openEditor}
+                  onEditTask={(task) =>
+                    openTaskEditor(task, `today-task-${task.id}`)
+                  }
                   onEditEvent={openEventEditor}
                   onDeleteTask={(task) =>
                     requestDelete({
@@ -1068,6 +1071,7 @@ function TodayView({
   onNavigate,
   onToggleTask,
   onOpenEditor,
+  onEditTask,
   onEditEvent,
   onDeleteTask,
 }: {
@@ -1077,6 +1081,7 @@ function TodayView({
   onNavigate: (view: ViewKey) => void;
   onToggleTask: (task: Task) => void;
   onOpenEditor: (entity: EntityName, defaults?: EditorDraft) => void;
+  onEditTask: (task: Task) => void;
   onEditEvent: (event: CalendarEvent) => void;
   onDeleteTask: (task: Task) => void;
 }) {
@@ -1183,12 +1188,30 @@ function TodayView({
                     checked={task.status === "done"}
                     onChange={() => onToggleTask(task)}
                   />
-                  <span className={task.status === "done" ? "is-done" : ""}>
-                    {task.title}
-                  </span>
-                  <span className="tag">
-                    {task.projectId ? "子目标" : "任务"}
-                  </span>
+                  <button
+                    id={`today-task-${task.id}`}
+                    className="task-row-open"
+                    type="button"
+                    aria-label={`编辑任务「${task.title}」和 DDL`}
+                    title="编辑任务与 DDL"
+                    onClick={() => onEditTask(task)}
+                  >
+                    <span
+                      className={`task-row-title${task.status === "done" ? " is-done" : ""}`}
+                    >
+                      {task.title}
+                    </span>
+                    {task.dueDate ? (
+                      <time dateTime={task.dueDate}>
+                        DDL {formatShortDate(task.dueDate)}
+                      </time>
+                    ) : (
+                      <span className="task-row-due is-empty">设置 DDL</span>
+                    )}
+                    <span className="task-row-open-mark" aria-hidden="true">
+                      ›
+                    </span>
+                  </button>
                   <button
                     className="row-action row-action--delete"
                     type="button"
@@ -3390,7 +3413,7 @@ function EditorDialog({
               ) : null}
               <TypedField
                 id="task-date"
-                label={draft.projectId ? "目标日期" : "计划日期"}
+                label={draft.projectId ? "子目标 DDL" : "任务 DDL"}
                 hint="YYYY-MM-DD，可选"
                 value={draft.dueDate ?? ""}
                 onChange={(value) => setDraft({ ...draft, dueDate: value })}

@@ -66,6 +66,7 @@
 | Create | 创建 | stable busy action | stay in owning view | “已创建” toast | keep values + inline error | new item / heading | PRODUCT.md |
 | Edit | 保存更改 | stable busy action | stay in context | “更改已保存” | keep editor + retry | edited item | PRODUCT.md |
 | Edit schedule | Time Rail 日程块 | prefilled event editor | stay on Today | “日程已更新” toast | keep values + inline error | edited time block | PRODUCT.md |
+| Edit task | 今日行动/议程任务正文 | prefilled task editor | stay in current view | “任务已更新” toast | keep editor + inline error | edited task trigger | PRODUCT.md |
 | Edit project | 项目卡片非操作区域 | prefilled project editor | stay on Projects | “项目已更新” toast | keep values + inline error | edited project card | PRODUCT.md |
 | Edit Idea/question | Idea/疑问卡片非操作区域 | prefilled shared editor | stay on Ideas | “线索已更新” toast | keep editor + inline error | edited card | PRODUCT.md |
 | Create cognition/note | 领域认知档案或笔记区“新增” | prefilled shared editor | stay on selected domain | “认知条目已创建” toast | keep values + inline error | new card / section heading | PRODUCT.md |

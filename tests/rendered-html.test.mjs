@@ -120,8 +120,13 @@ test("agenda separates unfinished DDL tasks from future calendar events", async 
   assert.match(client, /未来日程/);
   assert.match(client, /没有未完成且设有 DDL 的任务/);
   assert.match(client, /目前没有尚未结束的未来日程/);
-  assert.match(client, /function openTaskEditor\(task: Task\)/);
+  assert.match(client, /function openTaskEditor\(task: Task/);
   assert.match(client, /onChange=\{\(\) => onToggleTask\(task\)\}/);
+  assert.match(client, /id=\{`today-task-\$\{task\.id\}`\}/);
+  assert.match(client, /aria-label=\{`编辑任务「\$\{task\.title\}」和 DDL`\}/);
+  assert.match(client, /onClick=\{\(\) => onEditTask\(task\)\}/);
+  assert.match(client, /label=\{draft\.projectId \? "子目标 DDL" : "任务 DDL"\}/);
+  assert.match(styles, /\.task-row-open \{[^}]*grid-template-columns: minmax\(0, 1fr\) 10px/);
   assert.doesNotMatch(client, /events\.slice\(0, 30\)/);
   assert.match(api, /data\.notes !== undefined \|\| data\.note !== undefined/);
   assert.match(styles, /\.agenda-groups \{[^}]*grid-template-columns: repeat\(2/);
