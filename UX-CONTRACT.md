@@ -70,6 +70,7 @@
 | Edit task | 今日行动/议程任务正文 | prefilled task editor | stay in current view | “任务已更新” toast | keep editor + inline error | edited task trigger | PRODUCT.md |
 | Edit project | 项目卡片非操作区域 | prefilled project editor | stay on Projects | “项目已更新” toast | keep values + inline error | edited project card | PRODUCT.md |
 | Edit Idea/question | Idea/疑问卡片非操作区域 | prefilled shared editor | stay on Ideas | “线索已更新” toast | keep editor + inline error | edited card | PRODUCT.md |
+| Delete Idea/question | Idea/疑问卡片“×”或编辑器“删除” | danger confirmation names the record and irreversibility | stay on Ideas | “Idea/疑问已永久删除” toast | dialog remains + inline retry error | Ideas heading | PRODUCT.md |
 | Create cognition/note | 领域认知档案或笔记区“新增” | prefilled shared editor | stay on selected domain | “认知条目已创建” toast | keep values + inline error | new card / section heading | PRODUCT.md |
 | Edit cognition/note | 认知、分支、阶段总结或笔记卡片 | prefilled shared editor | stay on selected domain | “认知条目已更新” toast | keep editor + inline error | edited card | PRODUCT.md |
 | Archive | 归档 | confirmation busy | stay in list | “已归档” + Undo when honest | dialog remains + retry | next item | PRODUCT.md |
@@ -87,7 +88,7 @@
 - Sidebar/drawer/bottom-sheet transformation: persistent left sidebar ≥760px；mobile bottom navigation and full-width editor below。
 - Responsive record strategy: project cards use two columns on wide screens and one column on narrow screens；subgoals stay inside their owning project card；项目卡片非操作区域使用独立语义按钮打开名称、DDL 与笔记编辑，卡内操作不触发项目编辑。Idea/疑问卡片使用相同的整卡编辑入口，状态与归档按钮保持独立；卡片网格由宽屏三列逐级转为手机单列。领域学习在宽屏使用“认知档案 + 学习侧栏”，中窄屏转为单列；领域书架始终为单排横向滑动窗口，卡片保持舒适宽度且滚动条可见，核心认知、知识分支、阶段总结和笔记不因断点隐藏，编辑与删除入口保持可达。设置页在桌面将日历连接置于全宽首位，隐私与数据卡并列，窄屏转为单列。
 - Calendar grid strategy: 周视图固定日期头与时间栏，08:00—24:00 由同一连续比例轴定位；所有屏幕使用舒适日列宽的横向窗口，仅在首次进入周视图时定位到今天，之后保留用户的自由滚动位置且不启用列吸附；时间网格拥有横向和纵向滚动，不裁切日期或事件。
-- Agenda strategy: task 的行动日期与 DDL 分离；行动日期决定它出现在哪天的“今日行动”，DDL 只用于截止管理。议程分成“待完成任务”和“未来日程”两个语义分组。前者只显示 `status !== done` 且存在 DDL 的 task（包括项目子目标），并允许完成、编辑和删除；后者只显示 `endAt >= now` 的站内或 Google 日程，并沿用编辑、归档和删除。已结束的 routine/历史时间记录只保留在日历视图，不进入议程；两组都按时间升序完整呈现，不做固定条数截断。
+- Today/Agenda strategy: task 的行动日期与 DDL 分离；行动日期表示它开始进入“今日行动”的日期，未完成任务从该日起逐日延续，DDL 当天及逾期仍显示，完成后停止延续。议程分成“待完成任务”和“未来日程”两个语义分组。前者只显示 `status !== done` 且存在 DDL 的 task（包括项目子目标），并允许完成、编辑和删除；后者只显示 `endAt >= now` 的站内或 Google 日程，并沿用编辑、归档和删除。已结束的 routine/历史时间记录只保留在日历视图，不进入议程；两组都按时间升序完整呈现，不做固定条数截断。
 - Focus restoration: modal/drawer returns focus to trigger; sticky controls use scroll-margin and safe-area padding。
 
 ## Overlays and feedback

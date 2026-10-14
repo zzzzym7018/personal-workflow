@@ -88,7 +88,10 @@ test("task action dates stay independent from deadlines", async () => {
   assert.match(client, /plannedDate: entity === "task" \? date : ""/);
   assert.match(client, /dueDate: entity === "task" \? date : ""/);
   assert.match(client, /plannedDate: task\.plannedDate \?\? task\.dueDate \?\? ""/);
-  assert.match(client, /\(task\.plannedDate \?\? task\.dueDate\) === todayKey/);
+  assert.match(client, /function taskAppearsInToday\(task: Task, todayKey: string\)/);
+  assert.match(client, /task\.status !== "done" && hasStarted/);
+  assert.match(client, /plannedDate === todayKey \|\| dueDate === todayKey/);
+  assert.match(client, /hint="从哪天开始进入行动栏"/);
   assert.match(client, /id="task-planned-date"/);
   assert.match(client, /label="行动日期"/);
   assert.match(client, /value=\{draft\.dueDate \?\? ""\}/);
@@ -226,7 +229,7 @@ test("schedules, goals, and projects expose confirmed permanent deletion", async
   assert.match(styles, /\.row-action--delete/);
 });
 
-test("idea and question cards open a prefilled shared editor", async () => {
+test("idea and question cards support editing and confirmed deletion", async () => {
   const [client, api, styles] = await Promise.all([
     readFile(new URL("../app/workspace/WorkspaceApp.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/api/workspace/route.ts", import.meta.url), "utf8"),
@@ -234,6 +237,11 @@ test("idea and question cards open a prefilled shared editor", async () => {
   ]);
   assert.match(client, /function openIdeaEditor\(idea: Idea\)/);
   assert.match(client, /onEdit=\{openIdeaEditor\}/);
+  assert.match(client, /onDelete=\{\(item\) =>/);
+  assert.match(client, /aria-label={`删除\$\{idea\.type === "question" \? "疑问" : "Idea"\} \$\{idea\.title\}`}/);
+  assert.match(client, /onClick=\{\(\) => onDelete\(idea\)\}/);
+  assert.match(client, /editor === "idea"/);
+  assert.match(client, /这条\$\{item\.type === "question" \? "疑问" : "Idea"\}将被永久删除/);
   assert.match(client, /id=\{`idea-edit-\$\{idea\.id\}`\}/);
   assert.match(client, /className="idea-card-edit-target"/);
   assert.match(client, /type: idea\.type/);
@@ -245,6 +253,7 @@ test("idea and question cards open a prefilled shared editor", async () => {
   assert.match(client, /className="editor-title-textarea resize-none"/);
   assert.match(client, /Math\.min\(titleRef\.current\.scrollHeight, 144\)/);
   assert.match(api, /data\.type !== undefined/);
+  assert.match(api, /case "idea":\s*await db\.delete\(ideas\)\.where\(eq\(ideas\.id, body\.id\)\)/);
   assert.match(styles, /\.idea-card-edit-target/);
   assert.match(styles, /\.editor-title-textarea \{[^}]*min-height: 64px[^}]*max-height: 144px/);
 });
@@ -285,7 +294,7 @@ test("learning uses editable cognitive records and scoped notes", async () => {
   assert.match(client, /跨领域/);
   assert.match(client, /domain\.stage >= 5 \? "已完成" : "学习中"/);
   assert.match(client, /function openKnowledgeNoteEditor/);
-  assert.match(client, /editor === "event" \|\| editor === "project" \|\| editor === "domain"/);
+  assert.match(client, /editor === "event" \|\|[\s\S]*editor === "project" \|\|[\s\S]*editor === "domain"/);
   assert.match(client, /该领域及其 \$\{knowledgeCount\} 条认知与笔记、\$\{logCount\} 条学习记录将被永久删除/);
   assert.match(client, /id="knowledge-kind"/);
   assert.match(client, /id="knowledge-domain"/);

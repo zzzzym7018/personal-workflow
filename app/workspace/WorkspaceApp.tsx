@@ -149,7 +149,7 @@ type Toast = {
 };
 type EditorDraft = Record<string, string>;
 type DeleteTarget = {
-  entity: "event" | "task" | "project";
+  entity: Exclude<EntityName, "learningLog" | "knowledgeNote">;
   id: string;
   title: string;
   description: string;
@@ -887,6 +887,14 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
                       title: item.title,
                     })
                   }
+                  onDelete={(item) =>
+                    requestDelete({
+                      entity: "idea",
+                      id: item.id,
+                      title: item.title,
+                      description: `这条${item.type === "question" ? "疑问" : "Idea"}将被永久删除，且无法恢复。`,
+                    })
+                  }
                 />
               ) : null}
               {activeView === "review" ? (
@@ -949,7 +957,10 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
           onSubmit={createItem}
           onDelete={
             editorTargetId &&
-            (editor === "event" || editor === "project" || editor === "domain")
+            (editor === "event" ||
+              editor === "project" ||
+              editor === "domain" ||
+              editor === "idea")
               ? () => {
                   if (editor === "event") {
                     const item = snapshot?.events.find(
@@ -981,6 +992,17 @@ export function WorkspaceApp({ initialViewer }: { initialViewer: Viewer }) {
                         description: `该项目及其 ${childCount} 个子目标将被永久删除；关联的 Ideas 会保留并取消项目关联。此操作无法恢复。`,
                       });
                     }
+                  } else if (editor === "idea") {
+                    const item = snapshot?.ideas.find(
+                      (idea) => idea.id === editorTargetId,
+                    );
+                    if (item)
+                      requestDelete({
+                        entity: "idea",
+                        id: item.id,
+                        title: item.title,
+                        description: `这条${item.type === "question" ? "疑问" : "Idea"}将被永久删除，且无法恢复。`,
+                      });
                   } else {
                     const item = snapshot?.domains.find(
                       (domain) => domain.id === editorTargetId,
@@ -1094,10 +1116,8 @@ function TodayView({
   onDeleteTask: (task: Task) => void;
 }) {
   const now = useCurrentTime();
-  const todayTasks = snapshot.tasks.filter(
-    (task) =>
-      (task.plannedDate ?? task.dueDate) === todayKey ||
-      (task.startAt && localDateKey(new Date(task.startAt)) === todayKey),
+  const todayTasks = snapshot.tasks.filter((task) =>
+    taskAppearsInToday(task, todayKey),
   );
   const currentEvent = todayEvents.find(
     (item) =>
@@ -2674,6 +2694,7 @@ function IdeasView({
   onEdit,
   onUpdate,
   onArchive,
+  onDelete,
 }: {
   ideas: Idea[];
   projects: Project[];
@@ -2687,6 +2708,7 @@ function IdeasView({
     message?: string,
   ) => void;
   onArchive: (idea: Idea) => void;
+  onDelete: (idea: Idea) => void;
 }) {
   const [filter, setFilter] = useState<"all" | "idea" | "question">("all");
   const filtered = ideas.filter(
@@ -2737,14 +2759,26 @@ function IdeasView({
               <span className={`type-badge type-badge--${idea.type}`}>
                 {idea.type === "question" ? "疑问" : "Idea"}
               </span>
-              <button
-                className="icon-button"
-                type="button"
-                aria-label={`归档 ${idea.title}`}
-                onClick={() => onArchive(idea)}
-              >
-                ···
-              </button>
+              <div className="row-actions">
+                <button
+                  className="icon-button"
+                  type="button"
+                  aria-label={`归档 ${idea.title}`}
+                  title="归档"
+                  onClick={() => onArchive(idea)}
+                >
+                  ···
+                </button>
+                <button
+                  className="row-action row-action--delete"
+                  type="button"
+                  aria-label={`删除${idea.type === "question" ? "疑问" : "Idea"} ${idea.title}`}
+                  title="删除"
+                  onClick={() => onDelete(idea)}
+                >
+                  ×
+                </button>
+              </div>
             </div>
             <h3>{idea.title}</h3>
             <p>{idea.note || "还没有补充笔记。"}</p>
@@ -3441,7 +3475,7 @@ function EditorDialog({
                   <TypedField
                     id="task-planned-date"
                     label="行动日期"
-                    hint="在哪天的行动栏显示"
+                    hint="从哪天开始进入行动栏"
                     value={draft.plannedDate ?? ""}
                     onChange={(value) =>
                       setDraft({ ...draft, plannedDate: value })
@@ -3906,6 +3940,23 @@ function localDateKey(date: Date) {
     month: "2-digit",
     day: "2-digit",
   }).format(date);
+}
+function taskAppearsInToday(task: Task, todayKey: string) {
+  const plannedDate = task.plannedDate ?? "";
+  const dueDate = task.dueDate ?? "";
+  const timedForToday = Boolean(
+    task.startAt && localDateKey(new Date(task.startAt)) === todayKey,
+  );
+  const explicitlyToday = plannedDate === todayKey || dueDate === todayKey;
+  const hasStarted = plannedDate
+    ? plannedDate <= todayKey
+    : Boolean(dueDate && dueDate <= todayKey);
+
+  return (
+    timedForToday ||
+    explicitlyToday ||
+    (task.status !== "done" && hasStarted)
+  );
 }
 function formatFullDate(date: Date) {
   return new Intl.DateTimeFormat("zh-CN", {
