@@ -341,7 +341,7 @@ kbd { padding: 2px 7px; border: 1px solid var(--line); border-bottom-width: 2px;
 .domain-card-status { flex: 0 0 auto; padding: 3px 7px; border: 1px solid color-mix(in srgb, var(--domain-color), transparent 72%); border-radius: 999px; color: color-mix(in srgb, var(--domain-color), var(--ink) 22%); background: color-mix(in srgb, var(--domain-color), white 92%); font-size: 9px; font-weight: 700; }
 .domain-shelf-card strong, .domain-shelf-card p,
 .knowledge-note-card strong, .knowledge-note-card p,
-.idea-card h3, .idea-card > p { font-family: var(--font-display); font-size: var(--card-reading-size); line-height: 1.55; }
+.idea-card h3, .idea-card > p { font-family: var(--font-display); font-size: var(--card-reading-size); line-height: 1.55; overflow-wrap: anywhere; white-space: pre-line; }
 .domain-shelf-card strong { font-weight: 600; }
 .domain-shelf-card p { display: -webkit-box; margin: 0; overflow: hidden; color: var(--ink); font-weight: 400; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .domain-shelf-card small { align-self: end; margin-top: auto; color: var(--ink-muted); font-size: 10px; }

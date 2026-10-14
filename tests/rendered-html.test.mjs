@@ -314,6 +314,7 @@ test("learning uses editable cognitive records and scoped notes", async () => {
   assert.match(styles, /\.domain-shelf \{[^}]*grid-auto-flow: column[^}]*overflow-x: auto/);
   assert.match(styles, /\.domain-shelf-card/);
   assert.match(styles, /\.domain-shelf-card strong, \.domain-shelf-card p,[\s\S]*\.knowledge-note-card strong, \.knowledge-note-card p,[\s\S]*\.idea-card h3, \.idea-card > p \{[^}]*font-size: var\(--card-reading-size\)/);
+  assert.match(styles, /\.domain-shelf-card strong, \.domain-shelf-card p,[\s\S]*\.knowledge-note-card strong, \.knowledge-note-card p,[\s\S]*\.idea-card h3, \.idea-card > p \{[^}]*overflow-wrap: anywhere;[^}]*white-space: pre-line;/);
   assert.match(styles, /\.knowledge-note-card p \{[^}]*color: var\(--ink\)/);
   assert.doesNotMatch(styles, /\.domain-shelf \{ grid-template-columns: 1fr; \}/);
   assert.match(styles, /\.stage-timeline/);
