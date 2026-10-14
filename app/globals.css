@@ -21,6 +21,7 @@
   --font-sans: "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", system-ui, sans-serif;
   --font-display: "Songti SC", STSong, "Noto Serif CJK SC", serif;
   --font-mono: "SFMono-Regular", "SF Mono", Menlo, Consolas, monospace;
+  --card-reading-size: 17px;
 }
 
 * { box-sizing: border-box; scrollbar-color: #bcc8cf transparent; scrollbar-width: thin; }
@@ -338,8 +339,11 @@ kbd { padding: 2px 7px; border: 1px solid var(--line); border-bottom-width: 2px;
 .domain-card-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .domain-card-stage { color: color-mix(in srgb, var(--domain-color), var(--ink) 24%); font-family: var(--font-mono); font-size: 9px; font-weight: 700; letter-spacing: 0.04em; }
 .domain-card-status { flex: 0 0 auto; padding: 3px 7px; border: 1px solid color-mix(in srgb, var(--domain-color), transparent 72%); border-radius: 999px; color: color-mix(in srgb, var(--domain-color), var(--ink) 22%); background: color-mix(in srgb, var(--domain-color), white 92%); font-size: 9px; font-weight: 700; }
-.domain-shelf-card strong { font-family: var(--font-display); font-size: 21px; font-weight: 600; }
-.domain-shelf-card p { display: -webkit-box; margin: 0; overflow: hidden; color: var(--ink-muted); font-size: 12px; line-height: 1.55; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.domain-shelf-card strong, .domain-shelf-card p,
+.knowledge-note-card strong, .knowledge-note-card p,
+.idea-card h3, .idea-card > p { font-family: var(--font-display); font-size: var(--card-reading-size); line-height: 1.55; }
+.domain-shelf-card strong { font-weight: 600; }
+.domain-shelf-card p { display: -webkit-box; margin: 0; overflow: hidden; color: var(--ink); font-weight: 400; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .domain-shelf-card small { align-self: end; margin-top: auto; color: var(--ink-muted); font-size: 10px; }
 .learning-empty-state { padding: 34px; }
 .learning-workbench { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(280px, 0.75fr); align-items: start; gap: 18px; }
@@ -360,8 +364,8 @@ kbd { padding: 2px 7px; border: 1px solid var(--line); border-bottom-width: 2px;
 .knowledge-note-card--insight { border-top: 3px solid var(--teal); background: #f5faf9; }
 .knowledge-note-card--branch { border-top: 3px solid var(--cyan); }
 .knowledge-note-card--note { min-height: 0; }
-.knowledge-note-card strong { padding-right: 32px; font-size: 14px; line-height: 1.45; }
-.knowledge-note-card p { display: -webkit-box; margin: 0; overflow: hidden; color: var(--ink-muted); font-size: 11px; line-height: 1.6; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.knowledge-note-card strong { padding-right: 32px; font-weight: 600; }
+.knowledge-note-card p { display: -webkit-box; margin: 0; overflow: hidden; color: var(--ink); font-weight: 400; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
 .knowledge-note-card small { align-self: end; margin-top: auto; color: var(--ink-muted); font-size: 9px; }
 .knowledge-note-index { position: absolute; top: 14px; right: 14px; color: #8da0ad; font-family: var(--font-mono); font-size: 9px; }
 .knowledge-empty { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 78px; margin-top: 13px; padding: 14px 16px; border: 1px dashed #c5d1d8; border-radius: 11px; background: #fafcfc; }
@@ -414,8 +418,8 @@ kbd { padding: 2px 7px; border: 1px solid var(--line); border-bottom-width: 2px;
 .idea-card-edit-target:focus-visible { outline: 0; box-shadow: inset 0 0 0 3px rgba(82, 103, 199, 0.34); }
 .idea-card > :not(.idea-card-edit-target) { position: relative; z-index: 1; pointer-events: none; }
 .idea-card button:not(.idea-card-edit-target) { pointer-events: auto; }
-.idea-card h3 { margin: 17px 0 8px; font-family: var(--font-display); font-size: 20px; line-height: 1.35; }
-.idea-card > p { margin: 0; color: var(--ink-muted); font-size: 13px; }
+.idea-card h3 { margin: 17px 0 8px; font-weight: 600; }
+.idea-card > p { margin: 0; color: var(--ink); font-weight: 400; }
 .type-badge { padding: 3px 9px; }
 .type-badge--idea { color: #235f7b; background: #e4f3f6; }
 .type-badge--question { color: #8b5a15; background: #fff0d9; }

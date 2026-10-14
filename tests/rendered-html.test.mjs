@@ -255,6 +255,8 @@ test("idea and question cards support editing and confirmed deletion", async () 
   assert.match(api, /data\.type !== undefined/);
   assert.match(api, /case "idea":\s*await db\.delete\(ideas\)\.where\(eq\(ideas\.id, body\.id\)\)/);
   assert.match(styles, /\.idea-card-edit-target/);
+  assert.match(styles, /--card-reading-size: 17px/);
+  assert.match(styles, /\.idea-card h3, \.idea-card > p \{[^}]*font-family: var\(--font-display\)[^}]*font-size: var\(--card-reading-size\)/);
   assert.match(styles, /\.editor-title-textarea \{[^}]*min-height: 64px[^}]*max-height: 144px/);
 });
 
@@ -311,6 +313,8 @@ test("learning uses editable cognitive records and scoped notes", async () => {
   assert.match(styles, /\.learning-workbench/);
   assert.match(styles, /\.domain-shelf \{[^}]*grid-auto-flow: column[^}]*overflow-x: auto/);
   assert.match(styles, /\.domain-shelf-card/);
+  assert.match(styles, /\.domain-shelf-card strong, \.domain-shelf-card p,[\s\S]*\.knowledge-note-card strong, \.knowledge-note-card p,[\s\S]*\.idea-card h3, \.idea-card > p \{[^}]*font-size: var\(--card-reading-size\)/);
+  assert.match(styles, /\.knowledge-note-card p \{[^}]*color: var\(--ink\)/);
   assert.doesNotMatch(styles, /\.domain-shelf \{ grid-template-columns: 1fr; \}/);
   assert.match(styles, /\.stage-timeline/);
   assert.match(migration, /CREATE TABLE `knowledge_notes`/);
