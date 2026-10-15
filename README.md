@@ -1,6 +1,6 @@
 # 知行台
 
-一个单用户的私人个人助手网站，把日程、项目、领域学习、Ideas 与疑问放在同一套“捕捉 → 规划 → 执行 → 记录 → 回顾”工作流中。
+一个单用户的私人个人助手网站，把日程、项目、领域学习、Ideas 与疑问放在同一套“捕捉 → 规划 → 执行 → 记录”工作流中。
 
 ## 已实现
 
@@ -9,8 +9,9 @@
 - 项目页：项目概览、任务看板、进度和下一步行动。
 - 领域学习：领域书架、认知档案、核心认知、知识分支、分阶段总结与跨领域笔记。
 - Ideas 与疑问：快速捕捉、关联领域/项目、探索与解决状态。
-- 周回顾：任务完成、学习投入和时间分配。
 - 私人访问：服务端账号 allowlist；Google OAuth token 使用 AES-GCM 加密后存入 D1。
+
+“回顾”模块的实现目前保留在代码中，但已暂时从导航和路由入口停用。
 
 ## 本地运行
 
@@ -25,7 +26,7 @@ pnpm run dev
 
 ## 环境变量
 
-复制 `.env.example` 中的键到 Sites 部署环境：
+复制 `.env.example` 中的键到 Sites 部署环境。示例文件只包含占位符，可以安全提交；真实值只应保存在本地环境或 Sites 的部署环境中：
 
 - `ALLOWED_USER_EMAIL`：唯一可访问站点的 ChatGPT 登录邮箱。
 - `GOOGLE_ALLOWED_EMAIL`：允许连接的 Google Calendar 邮箱。
@@ -51,3 +52,14 @@ pnpm run test
 ```
 
 产品范围、设计系统与交互契约分别记录在 `PRODUCT.md`、`DESIGN.md` 和 `UX-CONTRACT.md`。
+
+## 上传 GitHub
+
+仓库不会跟踪 `.env`、构建输出、Wrangler 本地状态或其他本地凭据。创建 GitHub 仓库后，建议把 GitHub 配置为独立 remote，避免覆盖 Sites 的源码同步配置：
+
+```bash
+git remote add github <你的 GitHub 仓库 URL>
+git push -u github HEAD:main
+```
+
+如果仓库公开，请不要提交真实邮箱、OAuth 客户端密钥、加密密钥或 Wrangler 本地数据。

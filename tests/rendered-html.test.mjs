@@ -279,6 +279,18 @@ test("core pages keep distinct themes and balanced desktop layouts", async () =>
   assert.match(styles, /\.settings-layout \{[^}]*grid-template-columns: repeat\(2/);
 });
 
+test("review stays implemented but is blocked from navigation and direct routing", async () => {
+  const [client, readme] = await Promise.all([
+    readFile(new URL("../app/workspace/WorkspaceApp.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../README.md", import.meta.url), "utf8"),
+  ]);
+  assert.match(client, /const temporarilyDisabledViews = new Set<ViewKey>\(\["review"\]\)/);
+  assert.match(client, /const navigation = allNavigation\.filter\([\s\S]*!temporarilyDisabledViews\.has\(item\.key\)/);
+  assert.match(client, /navigation\.some\(\(item\) => item\.key === view\)/);
+  assert.match(client, /function ReviewView/);
+  assert.match(readme, /“回顾”模块的实现目前保留在代码中，但已暂时从导航和路由入口停用/);
+});
+
 test("learning uses editable cognitive records and scoped notes", async () => {
   const [client, api, database, schema, styles, migration] = await Promise.all([
     readFile(new URL("../app/workspace/WorkspaceApp.tsx", import.meta.url), "utf8"),

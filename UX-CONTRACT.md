@@ -84,6 +84,7 @@
 ## Navigation and responsive behavior
 
 - Route document title policy: `{页面} — 知行台`；client view changes update the title。
+- Temporarily disabled route: “回顾”保留实现但不进入桌面/移动导航；直接访问 `?view=review` 回落到“今日”，恢复时只需从 `temporarilyDisabledViews` 移除。
 - Route error / 403 page behavior: keep product identity and offer sign-in/home path; do not disguise 403 as 404。
 - Sidebar/drawer/bottom-sheet transformation: persistent left sidebar ≥760px；mobile bottom navigation and full-width editor below。
 - Responsive record strategy: project cards use two columns on wide screens and one column on narrow screens；subgoals stay inside their owning project card；项目卡片非操作区域使用独立语义按钮打开名称、DDL 与笔记编辑，卡内操作不触发项目编辑。Idea/疑问卡片使用相同的整卡编辑入口，状态与归档按钮保持独立；卡片网格由宽屏三列逐级转为手机单列。领域学习在宽屏使用“认知档案 + 学习侧栏”，中窄屏转为单列；领域书架始终为单排横向滑动窗口，卡片保持舒适宽度且滚动条可见，核心认知、知识分支、阶段总结和笔记不因断点隐藏，编辑与删除入口保持可达。设置页在桌面将日历连接置于全宽首位，隐私与数据卡并列，窄屏转为单列。

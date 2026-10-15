@@ -155,7 +155,9 @@ type DeleteTarget = {
   description: string;
 };
 
-const navigation: Array<{ key: ViewKey; label: string; mark: string }> = [
+const temporarilyDisabledViews = new Set<ViewKey>(["review"]);
+
+const allNavigation: Array<{ key: ViewKey; label: string; mark: string }> = [
   { key: "today", label: "今日", mark: "今" },
   { key: "calendar", label: "日程", mark: "历" },
   { key: "projects", label: "项目", mark: "项" },
@@ -164,6 +166,10 @@ const navigation: Array<{ key: ViewKey; label: string; mark: string }> = [
   { key: "review", label: "回顾", mark: "顾" },
   { key: "settings", label: "设置", mark: "设" },
 ];
+
+const navigation = allNavigation.filter(
+  (item) => !temporarilyDisabledViews.has(item.key),
+);
 
 const viewTitles: Record<ViewKey, string> = {
   today: "今日",
