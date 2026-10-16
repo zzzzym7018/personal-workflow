@@ -1,65 +1,55 @@
-# 知行台
+# Personal Workflow
 
-一个单用户的私人个人助手网站，把日程、项目、领域学习、Ideas 与疑问放在同一套“捕捉 → 规划 → 执行 → 记录”工作流中。
+> 面向知识工作者的个人日程与进度管理系统。
 
-## 已实现
+Personal Workflow（知行台）是一个面向单用户私人使用的个人项目。它尝试把分散在日历、待办清单、项目工具和学习笔记中的信息，整理到同一套清晰的工作流中：安排时间、追踪截止日期、推进长期项目，并持续记录知识学习进度。
 
-- 今日页：主要行动、连续时间轨、今日任务、项目与学习概览。
-- 日程页：周视图与议程视图、快速创建、Google Calendar 双向同步入口。
-- 项目页：项目概览、任务看板、进度和下一步行动。
-- 领域学习：领域书架、认知档案、核心认知、知识分支、分阶段总结与跨领域笔记。
-- Ideas 与疑问：快速捕捉、关联领域/项目、探索与解决状态。
-- 私人访问：服务端账号 allowlist；Google OAuth token 使用 AES-GCM 加密后存入 D1。
+## 为什么做这个项目
 
-“回顾”模块的实现目前保留在代码中，但已暂时从导航和路由入口停用。
+知识工作往往同时包含短期日程、带 DDL 的任务、持续数周或数月的项目，以及没有明确终点的学习过程。它们彼此相关，却通常分散在不同工具中。
+
+这个项目希望提供一个安静、直观的个人工作台，让每天要做的事与长期积累保持连接，而不是只完成一张不断增长的待办清单。
+
+## 主要用途
+
+- **日程管理**：记录 routine 和有明确时间段的安排，并通过时间轨查看当天节奏。
+- **DDL 管理**：创建带截止日期的任务，区分待处理、进行中与已完成状态。
+- **项目推进**：管理长期项目、DDL、项目笔记和可勾选的阶段性子目标。
+- **知识学习**：按领域整理当前理解、知识分支、阶段总结与跨领域笔记。
+- **Ideas 与疑问**：随时捕捉想法和问题，并关联到具体领域或项目。
+- **日历同步**：支持与 Google Calendar 连接，兼顾电脑端规划与移动端录入。
+
+## 当前状态
+
+项目已实现今日、日程、项目、领域学习、Ideas 与疑问等核心页面。“回顾”模块的代码仍然保留，但目前暂时停用。
+
+这是一个以个人使用为出发点的项目，重点关注信息层级、可视化表达和低负担编辑体验，而不是团队协作或复杂的企业流程。
 
 ## 本地运行
 
-要求 Node.js `>=22.13.0`。
+需要 Node.js `>=22.13.0` 与 pnpm。
 
 ```bash
 pnpm install
 pnpm run dev
 ```
 
-本地 `localhost` 使用预览身份；部署后必须通过 ChatGPT 登录和邮箱 allowlist。
+复制 `.env.example` 中的键到本地或 Sites 部署环境。示例文件只包含占位符；请勿提交真实邮箱、OAuth 密钥、加密密钥或 Wrangler 本地数据。
 
-## 环境变量
-
-复制 `.env.example` 中的键到 Sites 部署环境。示例文件只包含占位符，可以安全提交；真实值只应保存在本地环境或 Sites 的部署环境中：
-
-- `ALLOWED_USER_EMAIL`：唯一可访问站点的 ChatGPT 登录邮箱。
-- `GOOGLE_ALLOWED_EMAIL`：允许连接的 Google Calendar 邮箱。
-- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`：Google OAuth Web 客户端。
-- `GOOGLE_TOKEN_ENCRYPTION_KEY`：令牌加密密钥，建议至少 32 字节随机值。
-- `GOOGLE_OAUTH_STATE_SECRET`：OAuth state 签名密钥，建议至少 32 字节随机值。
-
-Google Cloud Console 中需要启用 Google Calendar API，并把以下地址加入 OAuth 客户端的授权重定向 URI：
-
-```text
-https://<你的 Sites 域名>/api/google/callback
-```
-
-## 数据与检查
-
-数据库使用 Sites D1 + Drizzle。首个请求会幂等创建表并写入一组演示数据，迁移文件位于 `drizzle/`。
+常用检查命令：
 
 ```bash
-pnpm run db:generate
 pnpm run lint
 pnpm run build
 pnpm run test
 ```
 
-产品范围、设计系统与交互契约分别记录在 `PRODUCT.md`、`DESIGN.md` 和 `UX-CONTRACT.md`。
+## 技术与数据
 
-## 上传 GitHub
+项目使用 TypeScript、React/Vinext、Cloudflare Workers、D1 与 Drizzle。Google Calendar 凭据在服务端加密存储，线上日程、项目和学习记录不会写入 Git 仓库。
 
-仓库不会跟踪 `.env`、构建输出、Wrangler 本地状态或其他本地凭据。创建 GitHub 仓库后，建议把 GitHub 配置为独立 remote，避免覆盖 Sites 的源码同步配置：
+更详细的产品范围、设计系统与交互约定分别记录在 `PRODUCT.md`、`DESIGN.md` 和 `UX-CONTRACT.md`。
 
-```bash
-git remote add github <你的 GitHub 仓库 URL>
-git push -u github HEAD:main
-```
+## 项目定位
 
-如果仓库公开，请不要提交真实邮箱、OAuth 客户端密钥、加密密钥或 Wrangler 本地数据。
+这是一个专门为知识工作者设计的个人规划系统：既管理今天，也保留长期项目与知识成长的连续性。
