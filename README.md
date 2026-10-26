@@ -106,7 +106,9 @@ python3 pull_export.py
 
 站点同时提供私人、只读的 `POST /mcp` 接口，供支持 Streamable HTTP MCP 的 Agent 使用。接口遵循 MCP 2026-07-28，提供今日概览、任务、项目、领域学习、Ideas 与完整快照六个读取工具，不提供创建、修改或删除能力。MCP 与网页共用 D1 数据，但使用独立路由，不会改变现有页面或 `/api/workspace` 的编辑行为。
 
-私人 Site 会在请求到达 `/mcp` 前验证访问权限。外部 Agent 需要通过 `OAI-Sites-Authorization` 请求头发送 Sites 服务访问 token；不要把该 token 写入仓库或公开配置。
+私人 Site 会在请求到达 `/mcp` 前执行 OAuth 鉴权。在 ChatGPT / Codex 中可直接安装 Sites 自动生成的私人插件；其他 Agent 需要使用支持 OAuth 2.1 的 MCP 客户端连接 `https://zhixing-desk.blithekid1.chatgpt.site/mcp`，首次连接时在浏览器中授权。不要把访问令牌写入仓库或公开配置。
+
+DeepSeek Harness 当前内置的 `@deepseek-ai/dsh-mcp-client` 只支持静态请求头，不能直接完成这条 OAuth 流程；需要使用支持 OAuth 的 DSH MCP 管理插件。这个限制只在客户端侧，网页和 MCP 服务端不需要改成公开访问。
 
 常用检查命令：
 
