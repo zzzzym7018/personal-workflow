@@ -73,12 +73,34 @@ pnpm run dev
 环境变量用途：
 
 - `ALLOWED_USER_EMAIL`：唯一允许进入私人工作台的 ChatGPT 登录邮箱。
+- `EXPORT_TOKEN`：个人 Agent 调用只读导出接口时使用的独立 bearer token；应在部署环境中标记为 secret。
 - `GOOGLE_ALLOWED_EMAIL`：允许连接的 Google Calendar 账号。
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`：Google OAuth 应用凭据。
 - `GOOGLE_TOKEN_ENCRYPTION_KEY`：在服务端加密 Google refresh token。
 - `GOOGLE_OAUTH_STATE_SECRET`：签名并校验 OAuth state。
 
 若未配置四项 Google OAuth 凭据，工作台的其他功能仍可使用，但 Google Calendar 连接与同步不会完整工作。
+
+### 只读远程导出
+
+项目提供 `GET /api/export`，供个人 Agent 拉取只读 JSON 快照。接口返回 `projects`、`tasks`、`domains`、`learningLogs`、`knowledgeNotes`、`ideas` 和 `events` 七类数据，不包含 Google OAuth 凭据。导出使用独立的 `EXPORT_TOKEN` 鉴权，并返回全部学习记录；工作台自身仍只加载最近 50 条学习记录。
+
+在 Sites 部署环境中将随机 token 配置为 secret：
+
+```bash
+openssl rand -hex 32
+```
+
+请勿把生成结果写入仓库或 `.env` 文件。生产站点是私人 Site，因此无登录态的 Agent 除 `EXPORT_TOKEN` 外，还需要 Sites 服务访问 token，并通过 `OAI-Sites-Authorization` 请求头发送。拉取脚本支持从 `SITES_ACCESS_TOKEN` 读取这个值：
+
+```bash
+EXPORT_URL=https://zhixing-desk.blithekid1.chatgpt.site/api/export \
+EXPORT_TOKEN=<export-token> \
+SITES_ACCESS_TOKEN=<sites-service-token> \
+python3 pull_export.py
+```
+
+脚本仅使用 Python 标准库，会校验七类字段及 `exportedAt`，按日期写入 `data/YYYY-MM-DD.json`，并默认拒绝覆盖同一天的已有快照。`data/` 已被 Git 忽略。可用 `--out` 指定其他目录，用 `--force` 明确覆盖已有文件。
 
 常用检查命令：
 

@@ -202,19 +202,31 @@ export async function seedWorkspace() {
   ]);
 }
 
-export async function getWorkspaceSnapshot() {
+async function readWorkspaceSnapshot(learningLogLimit?: number) {
   await seedWorkspace();
   const db = getDb();
+  const learningLogQuery = db.select().from(learningLogs).orderBy(desc(learningLogs.occurredAt));
+  const learningLogRows = learningLogLimit === undefined
+    ? learningLogQuery
+    : learningLogQuery.limit(learningLogLimit);
   const [projectRows, taskRows, domainRows, logRows, knowledgeNoteRows, ideaRows, eventRows] = await Promise.all([
     db.select().from(projects).where(isNull(projects.archivedAt)).orderBy(asc(projects.createdAt)),
     db.select().from(tasks).where(isNull(tasks.archivedAt)).orderBy(asc(tasks.createdAt)),
     db.select().from(domains).where(isNull(domains.archivedAt)).orderBy(asc(domains.createdAt)),
-    db.select().from(learningLogs).orderBy(desc(learningLogs.occurredAt)).limit(50),
+    learningLogRows,
     db.select().from(knowledgeNotes).where(isNull(knowledgeNotes.archivedAt)).orderBy(desc(knowledgeNotes.updatedAt)),
     db.select().from(ideas).where(isNull(ideas.archivedAt)).orderBy(desc(ideas.createdAt)),
     db.select().from(events).where(isNull(events.archivedAt)).orderBy(asc(events.startAt)),
   ]);
   return { projects: projectRows, tasks: taskRows, domains: domainRows, learningLogs: logRows, knowledgeNotes: knowledgeNoteRows, ideas: ideaRows, events: eventRows };
+}
+
+export async function getWorkspaceSnapshot() {
+  return readWorkspaceSnapshot(50);
+}
+
+export async function getWorkspaceExportSnapshot() {
+  return readWorkspaceSnapshot();
 }
 
 export async function getGoogleConnection(email: string) {
