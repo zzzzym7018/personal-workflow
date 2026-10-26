@@ -31,6 +31,30 @@ test("keeps privacy and Google tokens on the server", async () => {
   assert.doesNotMatch(client, /GOOGLE_CLIENT_SECRET|GOOGLE_TOKEN_ENCRYPTION_KEY|access_token/);
 });
 
+test("exposes a separate read-only MCP surface without changing workspace writes", async () => {
+  const [hosting, route, tools, workspaceApi] = await Promise.all([
+    readFile(new URL("../.openai/hosting.json", import.meta.url), "utf8"),
+    readFile(new URL("../app/mcp/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/lib/mcp-tools.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/workspace/route.ts", import.meta.url), "utf8"),
+  ]);
+  assert.deepEqual(JSON.parse(hosting).capabilities, ["mcp"]);
+  assert.match(route, /server\/discover/);
+  assert.match(route, /tools\/list/);
+  assert.match(route, /tools\/call/);
+  assert.match(route, /PROTOCOL_VERSION = "2026-07-28"/);
+  assert.match(tools, /get_today_overview/);
+  assert.match(tools, /list_tasks/);
+  assert.match(tools, /list_projects/);
+  assert.match(tools, /get_learning_overview/);
+  assert.match(tools, /list_ideas/);
+  assert.match(tools, /get_workspace_snapshot/);
+  assert.doesNotMatch(tools + route, /db\.insert|db\.update|db\.delete/);
+  assert.match(workspaceApi, /export async function POST/);
+  assert.match(workspaceApi, /export async function PATCH/);
+  assert.match(workspaceApi, /export async function DELETE/);
+});
+
 test("keeps dialog focus stable while users type with an IME", async () => {
   const client = await readFile(
     new URL("../app/workspace/WorkspaceApp.tsx", import.meta.url),
